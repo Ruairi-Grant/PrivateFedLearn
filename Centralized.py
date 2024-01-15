@@ -5,11 +5,13 @@ import pandas as pd
 from PIL import Image 
 import numpy as np
 from pathlib import Path
+import matplotlib as plt
 
-# Tensorflow model imports
-from tensorflow import keras
+# Tensorflow model import
+import tensorflow  as tf
+from tensorflow.keras import layers as tfkl
 from MySqueezeNet import SqueezeNet
-from keras.layers import Convolution2D
+
 from keras.applications.resnet50 import preprocess_input, decode_predictions
 
 
@@ -18,6 +20,7 @@ from keras.preprocessing import image
 
 # Defing Hyperparamaters
 BATCH_SIZE = 50
+SEED = 42 
 
 
 
@@ -34,27 +37,14 @@ def copy_file(src,dst):
 
 # This bit may be useful for loading the data faster 
 
-"""
-_x = torch.Tensor(np.load("dr_train_images.npy"))
-_y = torch.Tensor(np.load("dr_train_labels.npy")).long()
-train_dataset = TensorDataset(_x,_y)
-_x = torch.Tensor(np.load("dr_test_images.npy"))
-_y = torch.Tensor(np.load("dr_test_labels.npy")).long()
-test_dataset = TensorDataset(_x,_y)            
-"""
-
 DATA_DIR = r'Datasets/aptos2019-blindness-detection'
 
-
-#download ZIP, unzip it, delete zip file
-
-#download train and test dataframes
-#test_csv_path = DATA_DIR + '/test.csv'
 train_csv_path = DATA_DIR + '/train.csv'
 
 df_train = pd.read_csv(train_csv_path)
-#df_test = pd.read_csv(test_csv_path)
 
+# TODO: See if this can be more efficient, ie. check if it has already been done
+# split all the images into the foldair according to their label
 for diagnosis, group in df_train.groupby('diagnosis'):
     path_name = Path(DATA_DIR).joinpath('train', 'class_' +  str(diagnosis))
     create_folder(path_name)
@@ -65,48 +55,94 @@ for diagnosis, group in df_train.groupby('diagnosis'):
         shutil.copy(src, dst)
 
 
-# split all the images into the foldair according to their label
+
 
 #create train and test datasets
-# PyTorch equivlient
-
-"""
-apply_transform = transforms.Compose([transforms.ToPILImage(mode='RGB'),
-                        transforms.RandomHorizontalFlip(),
-                        transforms.Resize(265),
-                        transforms.CenterCrop(224),
-                        transforms.ToTensor(),
-                            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-"""
-"""
-train_ds = keras.utils.image_dataset_from_directory(data_dir,
-                                                    validation_split=0.2,
+        
+train_ds = tf.keras.utils.image_dataset_from_directory(Path(DATA_DIR).joinpath('train'),
+                                                    validation_split=0.3,
                                                     subset="training",
                                                     color_mode='rgb',
-                                                    seed=42,
-                                                    image_size=(256, 256),
-                                                    batch_size=BATCH_SIZE
+                                                    seed=SEED,
+                                                    image_size=(512, 512),  # This resizes the image, using bilinear transformation
+                                                    batch_size=BATCH_SIZE,
+                                                    shuffle=True
                                                     )
 
-val_ds = keras.utils.image_dataset_from_directory(data_dir,
-                                                    validation_split=0.2,
+val_ds = tf.keras.utils.image_dataset_from_directory(Path(DATA_DIR).joinpath('train'),
+                                                    validation_split=0.3,
                                                     subset="validation",
                                                     color_mode='rgb',
-                                                    seed=42,
-                                                    image_size=(256, 256),
-                                                    batch_size=BATCH_SIZE
+                                                    seed=SEED,
+                                                    image_size=(512, 512),  # This resizes the image, using bilinear transformation
+                                                    batch_size=BATCH_SIZE,
+                                                    shuffle=True
                                                     )
 
-test_ds = keras.utils.image_dataset_from_directory(data_dir,
-                                                    color_mode='rgb',
-                                                    seed=42,
-                                                    image_size=(256, 256),
-                                                    batch_size=BATCH_SIZE
-                                                    )
-"""
-#image_directory = data_dir + 'images/'
-#train_dataset = DRDataset(data_label = df_train, data_dir = image_directory,transform = apply_transform)
-#test_dataset = DRDataset(data_label = df_test, data_dir = image_directory,transform = apply_transform)   
+
+# could probably work batch count out but this is clearer
+# split validation into test and val
+# TODO:print the size of these datasets
+val_batches = tf.data.experimental.cardinality(val_ds)
+test_ds = val_ds.take((2*val_batches) // 3)
+val_ds = val_ds.skip((2*val_batches) // 3)
+
+
+data_prep = tf.keras.Sequential([
+        tfkl.Rescaling(1./255),
+        tfkl.Resizing(265, 265),
+        tfkl.CenterCrop(224, 224)
+])
+
+
+data_augmentation = tf.keras.Sequential([
+    data_prep,
+    tfkl.RandomFlip("horizontal")
+])
+
+
+#prepare the datasets
+train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
+val_ds = val_ds.map(lambda x, y: (data_prep(x), y))
+test_ds = test_ds.map(lambda x, y: (data_prep(x), y))
+ 
+# create the model
+model = SqueezeNet(include_top=False, input_shape=(224, 224, 3))
+
+model.compile(optimizer='adam',
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+              metrics=['accuracy'])
+
+model.summary()
+
+epochs=100
+history = model.fit(
+  train_ds,
+  validation_data=val_ds,
+  epochs=epochs
+)
+
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs_range = range(epochs)
+
+plt.figure(figsize=(8, 8))
+plt.subplot(1, 2, 1)
+plt.plot(epochs_range, acc, label='Training Accuracy')
+plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+plt.legend(loc='lower right')
+plt.title('Training and Validation Accuracy')
+
+plt.subplot(1, 2, 2)
+plt.plot(epochs_range, loss, label='Training Loss')
+plt.plot(epochs_range, val_loss, label='Validation Loss')
+plt.legend(loc='upper right')
+plt.title('Training and Validation Loss')
+plt.show()
 """
 #return train_dataset, test_dataset, user_groups
 # load dataset and user groups
