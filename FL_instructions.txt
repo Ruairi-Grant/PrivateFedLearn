@@ -1,0 +1,19 @@
+Derived from https://github.com/adap/flower/tree/main/examples/embedded-devices
+
+Client test and server test:
+for testing connecction between two devices over a network
+
+Embedded-devices:
+Following tutorial from https://github.com/adap/flower/tree/main/examples/embedded-devices
+Instructions:
+
+Centralized:
+Using squezenet defined in https://github.com/rcmalli/keras-squeezenet
+note: the above squeezenet may require keras version 2.XX,
+use normalization function from https://stackoverflow.com/questions/68047460/tensorflow-version-of-pytorch-transforms
+
+Datasets foldar:
+Diabetic reitinopaty data from Dopamine: Differentially Private Federated Learning on Medical Data and https://www.kaggle.com/c/aptos2019-blindness-detection/data
+use kaggle competitions download -c aptos2019-blindness-detection to download data
+test does not have targets so this cannot be used
+

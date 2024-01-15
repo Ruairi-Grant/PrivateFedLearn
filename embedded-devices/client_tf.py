@@ -4,14 +4,17 @@ import warnings
 
 import flwr as fl
 import tensorflow as tf
-from tensorflow import keras as keras
+from tensorflow import keras
+from tensorflow.keras import layers, regularizers
+from keras.layers import Dense, Dropout, Activation, Flatten, BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D, LeakyReLU
 
 parser = argparse.ArgumentParser(description="Flower Embedded devices")
 parser.add_argument(
     "--server_address",
     type=str,
     default="0.0.0.0:8080",
-    help=f"gRPC server address (deafault '0.0.0.0:8080')",
+    help="gRPC server address (default '0.0.0.0:8080')",
 )
 parser.add_argument(
     "--cid",
@@ -26,7 +29,7 @@ parser.add_argument(
 )
 
 warnings.filterwarnings("ignore", category=UserWarning)
-NUM_CLIENTS = 50
+NUM_CLIENTS = 6
 
 
 def prepare_dataset(use_mnist: bool):
@@ -73,8 +76,8 @@ class FlowerClient(fl.client.NumPyClient):
                     keras.Input(shape=(28, 28, 1)),
                     keras.layers.Conv2D(32, kernel_size=(5, 5), activation="relu"),
                     keras.layers.MaxPooling2D(pool_size=(2, 2)),
-                    keras.layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
-                    keras.layers.MaxPooling2D(pool_size=(2, 2)),
+                    #keras.layers.Conv2D(64, kernel_size=(3, 3), activation="relu"),
+                    #keras.layers.MaxPooling2D(pool_size=(2, 2)),
                     keras.layers.Flatten(),
                     keras.layers.Dropout(0.5),
                     keras.layers.Dense(10, activation="softmax"),
@@ -82,17 +85,26 @@ class FlowerClient(fl.client.NumPyClient):
             )
         else:
             # let's use a larger model for cifar
-            self.model = tf.keras.applications.MobileNetV3Small(
-                (32, 32, 3), classes=10, weights=None
-            )
-        self.model.compile(
-            "adam", "sparse_categorical_crossentropy", metrics=["accuracy"]
-        )
+            #self.model = tf.keras.applications.MobileNetV3Small(
+            #    (32, 32, 3), classes=10, weights=None
+            #)
+            self.model = keras.Sequential()
+            self.model.add(Conv2D(16, (3,3), padding='same', input_shape=self.x_train.shape[1:],activation='relu'))
+            self.model.add(Conv2D(16, (3,3), strides=(2,2), padding='same', activation='relu'))
+            self.model.add(Conv2D(32, (3,3), padding='same', activation='relu'))
+            self.model.add(Conv2D(32, (3,3), strides=(2,2), padding='same', activation='relu'))
+            self.model.add(Dropout(0.5))
+            self.model.add(Flatten())
+            self.model.add(Dense(10, activation='softmax',kernel_regularizer=regularizers.l1(0.0001)))
+            self.model.compile( "adam", "sparse_categorical_crossentropy", metrics=["accuracy"])
 
     def get_parameters(self, config):
-        return self.model.get_weights()
+        weights = self.model.get_weights()
+        #print(weights)
+        return weights
 
     def set_parameters(self, params):
+        #print(params)
         self.model.set_weights(params)
 
     def fit(self, parameters, config):
