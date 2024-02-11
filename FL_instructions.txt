@@ -12,6 +12,24 @@ Using squezenet defined in https://github.com/rcmalli/keras-squeezenet
 note: the above squeezenet may require keras version 2.XX,
 use normalization function from https://stackoverflow.com/questions/68047460/tensorflow-version-of-pytorch-transforms
 
+look into: https://www.kaggle.com/code/ruairigrant/notebookef12ebeb05/edit
+
+# HIGH PRIORITY
+# TODO: Include the test data in the test set, this could be either the test set or the val and test set - maybe put the download data script in a seperate script
+# TODO: Figure out a way to get a confusion matrix and classification report
+# TODO: Get script to create a new dir with all the images and data needed for the report
+# TODO: Experiment with bringing the rescaling back, try other scaling and standardization techniques
+# TODO: look at ways of loading the data without image_dataset_from_directory
+
+# LOW PRIORITY
+# TODO: Look into using a cache for loaded images
+# TODO: Investigate message "filling up shuffle buffer"
+# TODO: experiment with techniques to make white stand out more in images
+# TODO: experiment with other hyperparamaters
+# TODO: Experiment with data augmentation
+
+
+
 Datasets foldar:
 Diabetic reitinopaty data from Dopamine: Differentially Private Federated Learning on Medical Data and https://www.kaggle.com/c/aptos2019-blindness-detection/data
 use kaggle competitions download -c aptos2019-blindness-detection to download data
