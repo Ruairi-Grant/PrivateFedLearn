@@ -21,7 +21,7 @@ def monitor(target):
     cpu_percents = []
     while worker_process.is_alive():
         cpu_percents.append(p.cpu_percent())
-        time.sleep(0.01)
+        time.sleep(0.1)
 
     worker_process.join()
     return cpu_percents
