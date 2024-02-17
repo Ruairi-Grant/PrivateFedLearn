@@ -1,8 +1,10 @@
 """Script to train a model, with all of the data centralized"""
 
 # General Utility functions
+import os
 from pathlib import Path
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Tensorflow model import
 import tensorflow as tf
@@ -13,35 +15,76 @@ from keras.models import load_model
 from MySqueezeNet import SqueezeNet
 
 # Defing Hyperparamaters
-EPOCHS = 100
+EPOCHS = 40
 BATCH_SIZE = 50
 SEED = 42
-DATA_DIR = "data/diabetic_retinopathy/"
+DATA_DIR = Path("data/diabetic_retinopathy/train")
 
 # create train and test datasets
+image_count = len(list(DATA_DIR.glob("*/*.png")))
 
-train_ds = tf.keras.utils.image_dataset_from_directory(
-    Path(DATA_DIR).joinpath("train"),
-    validation_split=0.1,
-    subset="training",
-    color_mode="rgb",
-    seed=SEED,
-    image_size=(265, 265),  # This resizes the image, using bilinear transformation
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-)
+list_ds = tf.data.Dataset.list_files(str(DATA_DIR / "*/*"), shuffle=False)
+list_ds = list_ds.shuffle(image_count, reshuffle_each_iteration=False)
 
-val_ds = tf.keras.utils.image_dataset_from_directory(
-    Path(DATA_DIR).joinpath("train"),
-    validation_split=0.1,
-    subset="validation",
-    color_mode="rgb",
-    seed=SEED,
-    image_size=(265, 265),  # This resizes the image, using bilinear transformation
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-)
+class_names = np.array(sorted([item.name for item in DATA_DIR.glob("*")]))
 
+val_size = int(image_count * 0.2)
+train_ds = list_ds.skip(val_size)
+val_ds = list_ds.take(val_size)
+
+print(f"Training data size: {tf.data.experimental.cardinality(train_ds).numpy()}")
+print(f"Validation data size: {tf.data.experimental.cardinality(val_ds).numpy()}")
+
+
+def get_label(file_path):
+    # Convert the path to a list of path components
+    parts = tf.strings.split(file_path, os.path.sep)
+    # The second to last is the class-directory
+    one_hot = parts[-2] == class_names
+    # Integer encode the label
+    return tf.argmax(one_hot)
+
+
+def decode_img(img):
+    # Convert the compressed string to a 3D uint8 tensor
+    img = tf.io.decode_jpeg(img, channels=3)
+    # Resize the image to the desired size
+    return tf.image.resize(img, [265, 265])
+
+
+def process_path(file_path):
+    label = get_label(file_path)
+    # Load the raw data from the file as a string
+    img = tf.io.read_file(file_path)
+    img = decode_img(img)
+    return img, label
+
+
+def get_class_count(num_classes, dataset):
+    count = np.zeros(num_classes, dtype=np.int32)
+    for _, labels in dataset:
+        y, _, c = tf.unique_with_counts(labels)
+        count[y.numpy()] += c.numpy()
+    return count
+
+
+train_ds = train_ds.map(process_path)
+val_ds = val_ds.map(process_path)
+
+
+def configure_for_performance(ds):
+    ds = ds.cache()
+    ds = ds.shuffle(buffer_size=1000)
+    ds = ds.batch(BATCH_SIZE)
+    # ds = ds.prefetch(buffer_size=AUTOTUNE)
+    return ds
+
+
+train_ds = configure_for_performance(train_ds)
+val_ds = configure_for_performance(val_ds)
+
+print(f"Training class distribution: {get_class_count(len(class_names), train_ds )}")
+print(f"Validation class distribution: {get_class_count(len(class_names), val_ds )}")
 
 data_prep = tf.keras.Sequential(
     [
@@ -58,6 +101,13 @@ data_augmentation = tf.keras.Sequential([data_prep, tfkl.RandomFlip("horizontal"
 train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
 val_ds = val_ds.map(lambda x, y: (data_prep(x), y))
 # test_ds = test_ds.map(lambda x, y: (data_prep(x), y))
+
+print(
+    f"Post processing training class distribution: {get_class_count(len(class_names), train_ds )}"
+)
+print(
+    f"Post processing Validation class distribution: {get_class_count(len(class_names), val_ds )}"
+)
 
 # create the model
 model = SqueezeNet(include_top=False, input_shape=(224, 224, 3))
