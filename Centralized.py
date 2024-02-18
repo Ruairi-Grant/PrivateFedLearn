@@ -1,4 +1,4 @@
-"""Script to train a model, with all of the data centralized"""
+'''Script to train a model, with all of the data centralized'''
 
 # General Utility functions
 import os
@@ -14,29 +14,20 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.models import load_model
 
 from MySqueezeNet import SqueezeNet
+import common
 
 # Defing Hyperparamaters
 EPOCHS = 40
 BATCH_SIZE = 50
 SEED = 42
+IMAGE_SIZE = [265, 265]
 DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
 
-df = pd.read_csv("Datasets\\aptos2019-blindness-detection\\train.csv")
-
-# Define your list of allowed filenames
-allowed_files_set = set(df["id_code"] + ".png")
-
-# Filter files in the data directory based on the allowed filenames
-filtered_files = [
-    str(file_path)
-    for file_path in DATA_DIR.glob("*/*")
-    if file_path.name in allowed_files_set
-]
-
-image_count = len(filtered_files)
+# create train and test datasets
+image_count = len(list(DATA_DIR.glob("*/*.png")))
 
 # Create a dataset from the filtered file paths
-list_ds = tf.data.Dataset.from_tensor_slices(filtered_files)
+list_ds = tf.data.Dataset.list_files(str(DATA_DIR / "*/*"), shuffle=False)
 list_ds = list_ds.shuffle(image_count, reshuffle_each_iteration=False)
 
 class_names = np.array(sorted([item.name for item in DATA_DIR.glob("*")]))
@@ -48,32 +39,8 @@ val_ds = list_ds.take(val_size)
 print(f"Training data size: {tf.data.experimental.cardinality(train_ds).numpy()}")
 print(f"Validation data size: {tf.data.experimental.cardinality(val_ds).numpy()}")
 
-
-def get_label(file_path):
-    # Convert the path to a list of path components
-    parts = tf.strings.split(file_path, os.path.sep)
-    # The second to last is the class-directory
-    one_hot = parts[-2] == class_names
-    # Integer encode the label
-    return tf.argmax(one_hot)
-
-
-def decode_img(img):
-    # Convert the compressed string to a 3D uint8 tensor
-    img = tf.io.decode_jpeg(img, channels=3)
-    # Resize the image to the desired size
-    return tf.image.resize(img, [265, 265])
-
-
-def process_path(file_path):
-    label = get_label(file_path)
-    # Load the raw data from the file as a string
-    img = tf.io.read_file(file_path)
-    img = decode_img(img)
-    return img, label
-
-
 def get_class_count(num_classes, dataset):
+    '''Function to get the class count of the dataset'''
     count = np.zeros(num_classes, dtype=np.int32)
     for _, labels in dataset:
         y, _, c = tf.unique_with_counts(labels)
@@ -81,20 +48,11 @@ def get_class_count(num_classes, dataset):
     return count
 
 
-train_ds = train_ds.map(process_path)
-val_ds = val_ds.map(process_path)
+train_ds = train_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
+val_ds = val_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
 
-
-def configure_for_performance(ds):
-    ds = ds.cache()
-    ds = ds.shuffle(buffer_size=1000)
-    ds = ds.batch(BATCH_SIZE)
-    # ds = ds.prefetch(buffer_size=AUTOTUNE)
-    return ds
-
-
-train_ds = configure_for_performance(train_ds)
-val_ds = configure_for_performance(val_ds)
+train_ds = common.configure_for_performance(train_ds, BATCH_SIZE)
+val_ds = common.configure_for_performance(val_ds, BATCH_SIZE)
 
 print(f"Training class distribution: {get_class_count(len(class_names), train_ds )}")
 print(f"Validation class distribution: {get_class_count(len(class_names), val_ds )}")

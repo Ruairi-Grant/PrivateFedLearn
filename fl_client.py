@@ -16,6 +16,7 @@ from keras.layers import Dense, Dropout, Activation, Flatten, BatchNormalization
 from keras.layers import Conv2D, MaxPooling2D, LeakyReLU
 
 from MySqueezeNet import SqueezeNet
+import common
 
 parser = argparse.ArgumentParser(description="Flower Embedded devices")
 parser.add_argument(
@@ -35,24 +36,30 @@ parser.add_argument(
 warnings.filterwarnings("ignore", category=UserWarning)
 NUM_CLIENTS = 4
 DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
+DATA_DF_DIR = Path("Datasets\\aptos2019-blindness-detection\\train.csv")
 SEED = 42
 BATCH_SIZE = 50
 LOCAL_EPOCHS = 50  # TODO: Figure out how to get this from the server
+IMAGE_SIZE = [265, 265]
 
 
 def split_data():
-    # Assuming your dataframe is named df and the category column is named 'category'
-    df = pd.read_csv(
-        "C:\\git_repos\\Thesis\\Datasets\\aptos2019-blindness-detection\\train.csv"
-    )
+    """Function to split the data into four groups based on the diagnosis column
 
-    # Step 1: Group by the diagnosis column
-    grouped = df.groupby("diagnosis")
+    Returns:
+        list: A list of four pandas DataFrames, each representing a group of data.
+    """
 
-    # Step 2: Sort each group by the diagnosis column
-    sorted_groups = {k: v.sort_values("diagnosis") for k, v in grouped}
+    # Load the data from the CSV file
+    data_df = pd.read_csv(DATA_DF_DIR)
 
-    # Step 3: Split each group into four groups with slightly unequal sizes
+    # Group by the diagnosis column
+    data_df = data_df.groupby("diagnosis")
+
+    # Sort each group by the diagnosis column
+    sorted_groups = {k: v.sort_values("diagnosis") for k, v in data_df}
+
+    # Split each group into four groups that are as close in size as possible
     num_subgroups = 4
     subgroups = {k: [] for k in sorted_groups.keys()}
     for k, v in sorted_groups.items():
@@ -62,8 +69,7 @@ def split_data():
         start = 0
         for i in range(num_subgroups):
             subgroup_size = subgroup_base_size + (1 if i < remainder else 0)
-            subgroup = v.iloc[start : start + subgroup_size]
-            subgroups[k].append(subgroup)
+            subgroups[k].append(v.iloc[start : start + subgroup_size])
             start += subgroup_size
 
     # Step 4: Combine subgroups from different diagnoses into the final groups
@@ -77,9 +83,6 @@ def split_data():
 
 def prepare_dataset(data_df):
     """Download and partitions the CIFAR-10/MNIST dataset."""
-    # TODO: I need to load the data here and then partitian it
-    # TODO: This is also where data augmentation needs to happen
-
     # Define your list of allowed filenames
     allowed_files_set = set(data_df["id_code"] + ".png")
 
@@ -98,33 +101,13 @@ def prepare_dataset(data_df):
 
     class_names = np.array(sorted([item.name for item in DATA_DIR.glob("*")]))
 
+    # split the dataset into training and validation sets
     val_size = int(image_count * 0.2)
     train_ds = list_ds.skip(val_size)
     val_ds = list_ds.take(val_size)
 
     print(f"Training data size: {tf.data.experimental.cardinality(train_ds).numpy()}")
     print(f"Validation data size: {tf.data.experimental.cardinality(val_ds).numpy()}")
-
-    def get_label(file_path):
-        # Convert the path to a list of path components
-        parts = tf.strings.split(file_path, os.path.sep)
-        # The second to last is the class-directory
-        one_hot = parts[-2] == class_names
-        # Integer encode the label
-        return tf.argmax(one_hot)
-
-    def decode_img(img):
-        # Convert the compressed string to a 3D uint8 tensor
-        img = tf.io.decode_jpeg(img, channels=3)
-        # Resize the image to the desired size
-        return tf.image.resize(img, [265, 265])
-
-    def process_path(file_path):
-        label = get_label(file_path)
-        # Load the raw data from the file as a string
-        img = tf.io.read_file(file_path)
-        img = decode_img(img)
-        return img, label
 
     def get_class_count(num_classes, dataset):
         count = np.zeros(num_classes, dtype=np.int32)
@@ -133,18 +116,13 @@ def prepare_dataset(data_df):
             count[y.numpy()] += c.numpy()
         return count
 
-    train_ds = train_ds.map(process_path)
-    val_ds = val_ds.map(process_path)
+    # map the image paths to the images and labels
+    train_ds = train_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
+    val_ds = val_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
 
-    def configure_for_performance(ds):
-        ds = ds.cache()
-        ds = ds.shuffle(buffer_size=1000)
-        ds = ds.batch(BATCH_SIZE)
-        # ds = ds.prefetch(buffer_size=AUTOTUNE)
-        return ds
-
-    train_ds = configure_for_performance(train_ds)
-    val_ds = configure_for_performance(val_ds)
+    # configure the datasets for performance
+    train_ds = common.configure_for_performance(train_ds, BATCH_SIZE)
+    val_ds = common.configure_for_performance(val_ds, BATCH_SIZE)
 
     data_prep = tf.keras.Sequential(
         [
@@ -154,7 +132,7 @@ def prepare_dataset(data_df):
     )
 
     data_augmentation = tf.keras.Sequential([data_prep, tfkl.RandomFlip("horizontal")])
-    
+
     train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
     val_ds = val_ds.map(lambda x, y: (data_prep(x), y))
     print(
