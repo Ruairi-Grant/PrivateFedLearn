@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 # Tensorflow model import
 import tensorflow as tf
@@ -18,12 +19,24 @@ from MySqueezeNet import SqueezeNet
 EPOCHS = 40
 BATCH_SIZE = 50
 SEED = 42
-DATA_DIR = Path("data/diabetic_retinopathy/train")
+DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
 
-# create train and test datasets
-image_count = len(list(DATA_DIR.glob("*/*.png")))
+df = pd.read_csv("Datasets\\aptos2019-blindness-detection\\train.csv")
 
-list_ds = tf.data.Dataset.list_files(str(DATA_DIR / "*/*"), shuffle=False)
+# Define your list of allowed filenames
+allowed_files_set = set(df["id_code"] + ".png")
+
+# Filter files in the data directory based on the allowed filenames
+filtered_files = [
+    str(file_path)
+    for file_path in DATA_DIR.glob("*/*")
+    if file_path.name in allowed_files_set
+]
+
+image_count = len(filtered_files)
+
+# Create a dataset from the filtered file paths
+list_ds = tf.data.Dataset.from_tensor_slices(filtered_files)
 list_ds = list_ds.shuffle(image_count, reshuffle_each_iteration=False)
 
 class_names = np.array(sorted([item.name for item in DATA_DIR.glob("*")]))
