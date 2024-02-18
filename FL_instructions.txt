@@ -7,12 +7,12 @@ Embedded-devices:
 Following tutorial from https://github.com/adap/flower/tree/main/examples/embedded-devices
 Instructions:
 
+# TOTO: test the new data prep code
 # TODO: add the above Instructions
 # TODO: figure out how to get the final centralized metrics printed on the terminal
 # TODO: Figure out what metrics to include for this
 # TODO: create new dir of metrics to be included
-# TODO: add Differential Privacy
-# TODO: add Homomerphic Encryption
+# TODO: In client, local_epochs is hardoced, get this from fl_server.py
 
 
 Centralized:
@@ -23,6 +23,7 @@ use normalization function from https://stackoverflow.com/questions/68047460/ten
 look into: https://www.kaggle.com/code/ruairigrant/notebookef12ebeb05/edit
 
 # HIGH PRIORITY
+# TODO: Add the dataset prep stuff in a new module called common and import it to both the centralized and the client
 # TODO: Include the test data in the test set, this could be either the test set or the val and test set - maybe put the download data script in a seperate script
 # TODO: Figure out a way to get a confusion matrix and classification report
 # TODO: Get script to create a new dir with all the images and data needed for the report
@@ -35,6 +36,7 @@ look into: https://www.kaggle.com/code/ruairigrant/notebookef12ebeb05/edit
 # TODO: experiment with techniques to make white stand out more in images
 # TODO: experiment with other hyperparamaters
 # TODO: Experiment with data augmentation
+# TODO: Currently data augmentation is only changing current data, could be worth increasing the amount of data with augmentation
 
 
 
@@ -43,3 +45,9 @@ Diabetic reitinopaty data from Dopamine: Differentially Private Federated Learni
 use kaggle competitions download -c aptos2019-blindness-detection to download data
 test does not have targets so this cannot be used
 
+Differential Privacy: 
+insperation from https://github.com/adap/flower/tree/main/examples/dp-sgd-mnist
+
+Fully Homomorphic encryption:
+example here ( may not quite be FHE)
+https://github.com/tf-encrypted/tf-encrypted/tree/master/examples/application/federated-learning
