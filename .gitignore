@@ -3,7 +3,6 @@ flowerEnv/
 __pycache__/
 data
 Datasets
-Figures
 NumpyData
 Results/
 *.h5
