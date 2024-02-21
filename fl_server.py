@@ -1,8 +1,22 @@
+# General Utility imports
 import argparse
-from typing import List, Tuple
+from typing import List, Dict, Optional, Tuple
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+# Tensorflow and Keras imports
+import tensorflow as tf
+from tensorflow import keras
+from keras import layers as tfkl
 
 import flwr as fl
 from flwr.common import Metrics
+
+# Custom modules
+from MySqueezeNet import SqueezeNet
+import common
 
 
 parser = argparse.ArgumentParser(description="Flower Embedded devices")
@@ -54,6 +68,55 @@ parser.add_argument(
 ## Define default valued for the global variables
 LOCAL_EPOCHS = 50
 LOCAL_BATCH = 50
+IMAGE_SIZE = [265, 265]
+
+DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
+VAL_DF_DIR = Path("Datasets\\aptos2019-blindness-detection\\split_val.csv")
+
+
+def prepare_dataset_for_eval(data_df):
+    """Download and partitions the CIFAR-10/MNIST dataset."""
+    # Define your list of allowed filenames
+    allowed_files_set = set(data_df["id_code"] + ".png")
+
+    # Filter files in the data directory based on the allowed filenames
+    filtered_files = [
+        str(file_path)
+        for file_path in DATA_DIR.glob("*/*")
+        if file_path.name in allowed_files_set
+    ]
+
+    image_count = len(filtered_files)
+
+    # Create a dataset from the filtered file paths
+    eval_ds = tf.data.Dataset.from_tensor_slices(filtered_files)
+    eval_ds = eval_ds.shuffle(image_count, reshuffle_each_iteration=False)
+
+    class_names = np.array(sorted([item.name for item in DATA_DIR.glob("*")]))
+
+    print(f"Evaluation data size: {tf.data.experimental.cardinality(eval_ds).numpy()}")
+
+    # map the image paths to the images and labels
+    eval_ds = eval_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
+
+    # configure the datasets for performance
+    eval_ds = common.configure_for_performance(eval_ds, 1)
+
+    data_prep = tf.keras.Sequential(
+        [
+            # tfkl.Rescaling(1./255),
+            tfkl.CenterCrop(224, 224)
+        ]
+    )
+
+    eval_ds = eval_ds.map(lambda x, y: (data_prep(x), y))
+
+    print(
+        f"Evaluation class distribution: {common.get_class_count(len(class_names), eval_ds )}"
+    )
+
+    return eval_ds
+
 
 # Define metric aggregation function
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
@@ -70,7 +133,7 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 
 def fit_config(server_round: int):
     """Return a configuration with static batch size and (local) epochs."""
-    
+
     config = {
         "epochs": LOCAL_EPOCHS,  # Number of local epochs done by clients
         "batch_size": LOCAL_BATCH,  # Batch size to use by clients during fit()
@@ -78,8 +141,35 @@ def fit_config(server_round: int):
     return config
 
 
+def get_evaluate_fn(model):
+    """Return an evaluation function for server-side evaluation."""
+
+    # Load data and model here to avoid the overhead of doing it in `evaluate` itself
+    eval_df = pd.read_csv(VAL_DF_DIR)
+    eval_ds = prepare_dataset_for_eval(eval_df)
+
+    # The `evaluate` function will be called after every round
+    def evaluate(
+        server_round: int,
+        parameters: fl.common.NDArrays,
+        config: Dict[str, fl.common.Scalar],
+    ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
+        model.set_weights(parameters)  # Update model with the latest parameters
+        loss, accuracy = model.evaluate(eval_ds)
+        return loss, {"accuracy": accuracy}
+
+    return evaluate
+
+
 def main():
     args = parser.parse_args()
+
+    model = SqueezeNet(include_top=False, input_shape=(224, 224, 3))
+    model.compile(
+        optimizer="adam",
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+        metrics=["accuracy"],
+    )
 
     # TODO: this is a workaround to set global variables
     # Set global variables
@@ -94,6 +184,7 @@ def main():
         min_fit_clients=args.min_num_clients,
         min_evaluate_clients=args.min_num_clients,
         min_available_clients=args.min_num_clients,
+        evaluate_fn=get_evaluate_fn(model),
         on_fit_config_fn=fit_config,
         evaluate_metrics_aggregation_fn=weighted_average,
     )

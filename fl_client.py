@@ -37,10 +37,10 @@ parser.add_argument(
 warnings.filterwarnings("ignore", category=UserWarning)
 NUM_CLIENTS = 4
 DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
-DATA_DF_DIR = Path("Datasets\\aptos2019-blindness-detection\\train.csv")
+DATA_DF_DIR = Path("Datasets\\aptos2019-blindness-detection\\split_train.csv")
 SEED = 42
+# TODO: Get this value from the server, i may need to run prepare_dataset inside fit
 BATCH_SIZE = 50
-LOCAL_EPOCHS = 50  # TODO: Figure out how to get this from the server
 IMAGE_SIZE = [265, 265]
 
 

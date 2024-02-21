@@ -8,11 +8,11 @@ Following tutorial from https://github.com/adap/flower/tree/main/examples/embedd
 Instructions:
 
 # TODO: add the above Instructions
-# TODO: figure out how to get the final centralized metrics printed on the terminal
+# TODO: figure out how to get the final centralized metrics printed on the terminal (possibly using evaluate_fn)
+# TODO: see if i can access the model from the server after training
 # TODO: Figure out what metrics to include for this
 # TODO: create new dir of metrics to be included
 # TODO: the server setting of global local epochs is probably not best practice, look into other ways of doing this
-
 
 Centralized:
 Using squezenet defined in https://github.com/rcmalli/keras-squeezenet
