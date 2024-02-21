@@ -1,20 +1,21 @@
-import os
+'''Module to define the FlowerClient class and the main function to start the client'''
+# General utility imports
 from pathlib import Path
 import argparse
 import warnings
-
 import numpy as np
 import pandas as pd
 
+# Flower imports
 import flwr as fl
-from flwr.common import Config, NDArrays, Scalar
+from flwr.common import NDArrays
+
+# Tensorflow and Keras imports
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras import layers, regularizers
 from keras import layers as tfkl
-from keras.layers import Dense, Dropout, Activation, Flatten, BatchNormalization
-from keras.layers import Conv2D, MaxPooling2D, LeakyReLU
 
+# Custom modules
 from MySqueezeNet import SqueezeNet
 import common
 
@@ -109,13 +110,6 @@ def prepare_dataset(data_df):
     print(f"Training data size: {tf.data.experimental.cardinality(train_ds).numpy()}")
     print(f"Validation data size: {tf.data.experimental.cardinality(val_ds).numpy()}")
 
-    def get_class_count(num_classes, dataset):
-        count = np.zeros(num_classes, dtype=np.int32)
-        for _, labels in dataset:
-            y, _, c = tf.unique_with_counts(labels)
-            count[y.numpy()] += c.numpy()
-        return count
-
     # map the image paths to the images and labels
     train_ds = train_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
     val_ds = val_ds.map(lambda x: common.process_path(x, class_names, IMAGE_SIZE))
@@ -136,10 +130,10 @@ def prepare_dataset(data_df):
     train_ds = train_ds.map(lambda x, y: (data_augmentation(x), y))
     val_ds = val_ds.map(lambda x, y: (data_prep(x), y))
     print(
-        f"Training class distribution: {get_class_count(len(class_names), train_ds )}"
+        f"Training class distribution: {common.get_class_count(len(class_names), train_ds )}"
     )
     print(
-        f"Validation class distribution: {get_class_count(len(class_names), val_ds )}"
+        f"Validation class distribution: {common.get_class_count(len(class_names), val_ds )}"
     )
 
     return (train_ds, val_ds)

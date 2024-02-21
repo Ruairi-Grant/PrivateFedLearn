@@ -36,6 +36,24 @@ parser.add_argument(
     help="If you use Raspberry Pi Zero clients (which just have 512MB or RAM) use MNIST",
 )
 
+parser.add_argument(
+    "--local_epochs",
+    type=int,
+    default=50,
+    help="Local epochs done by clients (default: 50)",
+)
+
+parser.add_argument(
+    "--local_batch",
+    type=int,
+    default=50,
+    help="Local epochs done by clients (default: 50)",
+)
+
+# TODO: is there a better way to handle these
+## Define default valued for the global variables
+LOCAL_EPOCHS = 50
+LOCAL_BATCH = 50
 
 # Define metric aggregation function
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
@@ -52,9 +70,10 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 
 def fit_config(server_round: int):
     """Return a configuration with static batch size and (local) epochs."""
+    
     config = {
-        "epochs": 10,  # Number of local epochs done by clients
-        "batch_size": 16,  # Batch size to use by clients during fit()
+        "epochs": LOCAL_EPOCHS,  # Number of local epochs done by clients
+        "batch_size": LOCAL_BATCH,  # Batch size to use by clients during fit()
     }
     return config
 
@@ -62,7 +81,11 @@ def fit_config(server_round: int):
 def main():
     args = parser.parse_args()
 
-    print(args)
+    # TODO: this is a workaround to set global variables
+    # Set global variables
+    global LOCAL_BATCH, LOCAL_EPOCHS
+    LOCAL_EPOCHS = args.local_epochs
+    LOCAL_BATCH = args.local_batch
 
     # Define strategy
     strategy = fl.server.strategy.FedAvg(
