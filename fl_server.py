@@ -1,4 +1,6 @@
+'''Module to define the FlowerServer class and the main function to start the server'''
 # General Utility imports
+import os
 import argparse
 from typing import List, Dict, Optional, Tuple
 from pathlib import Path
@@ -71,6 +73,7 @@ LOCAL_BATCH = 50
 IMAGE_SIZE = [265, 265]
 
 DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
+RESULTS_DIR = Path("Results\\FedLearn_DR_no_privacy")
 VAL_DF_DIR = Path("Datasets\\aptos2019-blindness-detection\\split_val.csv")
 
 
@@ -156,6 +159,7 @@ def get_evaluate_fn(model):
     ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
         model.set_weights(parameters)  # Update model with the latest parameters
         loss, accuracy = model.evaluate(eval_ds)
+        common.evaluate_model(model, eval_ds, os.path.join(RESULTS_DIR, "Evaluate"))
         return loss, {"accuracy": accuracy}
 
     return evaluate

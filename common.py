@@ -60,7 +60,7 @@ def get_class_count(num_classes, dataset):
 
 def evaluate_model(model, dataset, dir_path):
     """Function to evaluate the model and save the confusion matrix and classification report"""
-    _, eval_acc = model.evaluate(dataset, verbose=2)
+    _, eval_acc = model.evaluate(dataset, verbose=1)
     print("\nTrain accuracy:", eval_acc)
     # Clear the current matplotlib figure
     plt.clf()
