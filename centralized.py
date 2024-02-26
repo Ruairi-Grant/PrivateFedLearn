@@ -11,6 +11,10 @@ from keras import layers as tfkl
 from keras.callbacks import EarlyStopping, ModelCheckpoint
 from keras.models import load_model
 
+# Tensorflow Privacy
+from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras import DPKerasSGDOptimizer
+import dp_accounting
+
 # Matplotlib for visualization
 import matplotlib.pyplot as plt
 
@@ -25,6 +29,36 @@ SEED = 42
 IMAGE_SIZE = [265, 265]
 DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
 RESULTS_DIR = Path("Results\\Centralized_DR")
+
+# TODO: what exactly does this mean
+NOISE_MULTIPLIER = 1.0
+DIFFERENTIAL_PRIVACY = True
+# TODO: what exactly does this mean
+L2_NORM_CLIP = 2.0
+LEARNING_RATE = 0.9
+MICROBATCHES = 10
+
+# TODO: what does this do 
+def compute_epsilon(steps):
+    """Computes epsilon value for given hyperparameters."""
+    if NOISE_MULTIPLIER == 0.0:
+        return float("inf")
+    orders = [1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64))
+    accountant = dp_accounting.rdp.RdpAccountant(orders)
+
+    sampling_probability = BATCH_SIZE / 60000
+    event = dp_accounting.SelfComposedDpEvent(
+        dp_accounting.PoissonSampledDpEvent(
+            sampling_probability, dp_accounting.GaussianDpEvent(NOISE_MULTIPLIER)
+        ),
+        steps,
+    )
+
+    accountant.compose(event)
+
+    # TODO: find paramater for delta
+    return accountant.get_epsilon(target_delta=1e-5)
+
 
 # create train and test datasets
 image_count = len(list(DATA_DIR.glob("*/*.png")))
@@ -83,11 +117,25 @@ print(
 # create the model
 model = SqueezeNet(include_top=False, input_shape=(224, 224, 3))
 
-# tf.keras.optimizers.experimental.SGD(momentum=0.9)
+# TODO: try changing back to adam
+if DIFFERENTIAL_PRIVACY:
+    optimizer = DPKerasSGDOptimizer(
+        l2_norm_clip=L2_NORM_CLIP,
+        noise_multiplier=NOISE_MULTIPLIER,
+        num_microbatches=MICROBATCHES, # TODO: what does this mean
+        learning_rate=LEARNING_RATE,
+    )
+    # Compute vector of per-example loss rather than its mean over a minibatch.
+    loss = tf.keras.losses.SparseCategoricalCrossentropy(
+        reduction=tf.losses.Reduction.NONE
+    )
+else:
+    optimizer = "adam"
+    loss = tf.keras.losses.SparseCategoricalCrossentropy()
 
 model.compile(
-    optimizer="adam",
-    loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+    optimizer=optimizer,
+    loss=loss,
     metrics=["accuracy"],
 )
 
@@ -136,3 +184,11 @@ fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
 # Evaluate the model
 common.evaluate_model(best_model, train_ds, os.path.join(RESULTS_DIR, "Train"))
 common.evaluate_model(best_model, val_ds, os.path.join(RESULTS_DIR, "Validation"))
+
+# TODO: make this accurate for my case
+# Compute the privacy budget expended.
+if DIFFERENTIAL_PRIVACY:
+    eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
+    print(f"For delta=1e-5, the current epsilon is: {eps}")
+else:
+    print("Trained with vanilla non-private SGD optimizer")
