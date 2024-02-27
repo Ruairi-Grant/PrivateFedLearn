@@ -20,7 +20,7 @@ look into: https://www.kaggle.com/code/ruairigrant/notebookef12ebeb05/edit
 
 # HIGH PRIORITY
 # TODO: Include the test data in the test set, this could be either the test set or the val and test set - maybe put the download data script in a seperate script
-# TODO: Experiment with bringing the rescaling back, try other scaling and standardization techniques
+# TODO: try other scaling and standardization techniques
 
 # LOW PRIORITY
 # TODO: Look into using a cache for loaded images

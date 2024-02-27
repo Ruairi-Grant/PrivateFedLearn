@@ -60,7 +60,7 @@ print(
 # Data augmentation
 data_prep = tf.keras.Sequential(
     [
-        # tfkl.Rescaling(1./255),
+        tfkl.Rescaling(1./255),
         tfkl.CenterCrop(224, 224)
     ]
 )
