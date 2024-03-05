@@ -28,8 +28,8 @@ EPOCHS = 100
 BATCH_SIZE = 50
 SEED = 42
 IMAGE_SIZE = [265, 265]
-DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
-RESULTS_DIR = Path("Results\\Centralized_DR")
+DATA_DIR = os.path.join("Datasets", "aptos2019-blindness-detection", "train")
+RESULTS_DIR = os.path.join("Results", "Centralized_DR")
 
 
 NOISE_MULTIPLIER = 0.3
@@ -37,6 +37,7 @@ DIFFERENTIAL_PRIVACY = True
 L2_NORM_CLIP = 1.5
 LEARNING_RATE = 0.02
 MICROBATCHES = 10
+
 
 # TODO: what does this do
 def compute_epsilon(epochs, num_data, batch_size):
@@ -94,12 +95,7 @@ print(
 )
 
 # Data augmentation
-data_prep = tf.keras.Sequential(
-    [
-        tfkl.Rescaling(1./255),
-        tfkl.CenterCrop(224, 224)
-    ]
-)
+data_prep = tf.keras.Sequential([tfkl.Rescaling(1.0 / 255), tfkl.CenterCrop(224, 224)])
 
 data_augmentation = tf.keras.Sequential([data_prep, tfkl.RandomFlip("horizontal")])
 
@@ -171,7 +167,7 @@ epochs_range = range(len(loss))
 # check if the results directory exists
 if not os.path.exists(RESULTS_DIR):
     os.makedirs(RESULTS_DIR)
-    
+
 # PLot the dataset and save it
 fig1, ax1 = plt.subplots(figsize=(7, 5))
 ax1.plot(epochs_range, acc, label="Training Accuracy")
@@ -196,7 +192,9 @@ common.evaluate_model(best_model, val_ds, os.path.join(RESULTS_DIR, "Validation"
 # Compute the privacy budget expended.
 if DIFFERENTIAL_PRIVACY:
     # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
-    eps = compute_epsilon(len(loss), tf.data.experimental.cardinality(train_ds).numpy() , BATCH_SIZE)
+    eps = compute_epsilon(
+        len(loss), tf.data.experimental.cardinality(train_ds).numpy(), BATCH_SIZE
+    )
     print(f"For delta=1e-5, the current epsilon is: {eps}")
 else:
     print("Trained with vanilla non-private SGD optimizer")
