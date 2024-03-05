@@ -168,6 +168,10 @@ val_loss = history.history["val_loss"]
 
 epochs_range = range(len(loss))
 
+# check if the results directory exists
+if not os.path.exists(RESULTS_DIR):
+    os.makedirs(RESULTS_DIR)
+    
 # PLot the dataset and save it
 fig1, ax1 = plt.subplots(figsize=(7, 5))
 ax1.plot(epochs_range, acc, label="Training Accuracy")

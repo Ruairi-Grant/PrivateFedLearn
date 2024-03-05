@@ -83,5 +83,9 @@ def evaluate_model(model, dataset, dir_path):
     # Create the classification report
     report = classification_report(true_labels, predicted_labels)
 
+    # check if the directory exists
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
     with open(dir_path + "/classification_report.txt", "w") as file:
         file.write(report)
