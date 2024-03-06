@@ -19,6 +19,7 @@ use normalization function from https://stackoverflow.com/questions/68047460/ten
 look into: https://www.kaggle.com/code/ruairigrant/notebookef12ebeb05/edit
 
 # HIGH PRIORITY
+# TODO: Figure out what reduction=NONE does in the loss function
 # TODO: Include the test data in the test set, this could be either the test set or the val and test set - maybe put the download data script in a seperate script
 # TODO: try other scaling and standardization techniques
 
@@ -29,6 +30,15 @@ look into: https://www.kaggle.com/code/ruairigrant/notebookef12ebeb05/edit
 # TODO: experiment with other hyperparamaters
 # TODO: Experiment with data augmentation
 # TODO: Currently data augmentation is only changing current data, could be worth increasing the amount of data with augmentation
+
+Mnist stuff:
+
+TODO
+# Add the evaluation and plotting stuff to it 
+# run with Fl without dp
+# run with Fl with dp
+# have the centralized model and fl model be the same model architecture
+# Make the code more similar in style to the DR code
 
 
 
