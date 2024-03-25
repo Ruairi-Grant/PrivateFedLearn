@@ -44,7 +44,7 @@ def main(args) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Server Script")
     parser.add_argument("--num-clients", default=2, type=int)
-    parser.add_argument("--num-rounds", default=1, type=int)
+    parser.add_argument("--num-rounds", default=10, type=int)
     parser.add_argument("--fraction-fit", default=1.0, type=float)
     args = parser.parse_args()
     main(args)

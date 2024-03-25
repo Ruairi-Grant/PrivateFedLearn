@@ -187,9 +187,9 @@ def compute_epsilon(epochs, num_data, batch_size):
 
 def main():
     # Load a subset of MNIST to simulate the local data partition
-    (x_train, y_train), (x_test, y_test) = common.load(1)[0]
+    (x_train, y_train), (x_test, y_test) = load(1)[0]
 
-    model = common.create_cnn_model()
+    model = create_cnn_model()
 
     if DPSGD and x_train.shape[0] % BATCH_SIZE != 0:
         drop_num = x_train.shape[0] % BATCH_SIZE
