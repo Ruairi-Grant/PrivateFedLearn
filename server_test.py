@@ -1,22 +1,26 @@
+import socket
 
-import socket                
-
-s = socket.socket()          
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 print("Socket successfully created")
 
-port = 12345                
+port = 12345
+host = "192.168.0.10"
 
-s.bind(('192.168.0.11', port))         
-print("socket binded to %s" %(port))
+s.bind((host, port))
+print(f"socket binded to {host} on port {port}")
 
-s.listen(10)      
-print("socket is listening")           
 
-while True: 
+msg_count = 0
+while True:
 
-   c, addr = s.accept()      
-   print('Got connection from', addr) 
+    # Receive the client packet along with the address it is coming from
+    message, address = s.recvfrom(1024)
+    if message:
+        msg_count += 1
 
-   c.send('Thank you for connecting') 
+    print(f"Received: {message}, count: {msg_count}\r")
 
-   c.close() 
+    response = "Hello, I am the server".encode("utf-8")
+
+    # Send a reply to the client
+    s.sendto(response, address)
