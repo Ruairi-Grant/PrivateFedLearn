@@ -4,6 +4,8 @@ import psutil
 import numpy as np
 import socket
 
+import dp_test.dp_sgd_mnist.Central_mnist as Central_mnist
+
 def test_network_and_cpu(duration=60):
     # Define the target host and port for sending and receiving packets
     target_host = '192.168.0.10'
@@ -52,6 +54,9 @@ def test_network_and_cpu(duration=60):
 def sleep_test(duration=60):
     time.sleep(duration)
 
+def test_script():
+
+    Central_mnist.main()
 
 def monitor(target):
     worker_process = mp.Process(target=target)
