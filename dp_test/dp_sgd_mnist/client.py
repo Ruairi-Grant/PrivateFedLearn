@@ -13,14 +13,13 @@ from typing import List, Tuple
 import numpy as np
 import tensorflow as tf
 
-#from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
-#from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
+# from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
+# from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
 import dp_accounting
 
 XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
 PartitionedDataset = List[Tuple[XY, XY]]
-
 
 
 def compute_epsilon(
@@ -118,7 +117,6 @@ def load(
     return list(zip(xy_train_partitions, xy_test_partitions))
 
 
-
 # Make TensorFlow logs less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -202,27 +200,8 @@ class MnistClient(fl.client.NumPyClient):
         return loss, num_examples_test, {"accuracy": accuracy}
 
 
-def main(args) -> None:    
-
-    # Load a subset of MNIST to simulate the local data partition
-    (x_train, y_train), (x_test, y_test) = load(args.num_clients)[args.partition]
-
-    # drop samples to form exact batches for dpsgd
-    # this is necessary since dpsgd is sensitive to uneven batches
-    # due to microbatching
-    if args.dpsgd and x_train.shape[0] % args.batch_size != 0:
-        drop_num = x_train.shape[0] % args.batch_size
-        x_train = x_train[:-drop_num]
-        y_train = y_train[:-drop_num]
-
-    # Start Flower client
-    client = MnistClient(x_train, y_train, x_test, y_test, args)
-    fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=client)
-    if args.dpsgd:
-        print("Privacy Loss: ", PRIVACY_LOSS)
-
-
-if __name__ == "__main__":
+def main(args) -> None:
+    
     parser = argparse.ArgumentParser(description="Flower Client")
     parser.add_argument(
         "--num-clients",
@@ -233,7 +212,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--partition",
         type=int,
-        required=True,
+        default=0,
         help="Data Partion to train on. Must be less than number of clients",
     )
     parser.add_argument(
@@ -268,4 +247,20 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    main(args)
+    # Load a subset of MNIST to simulate the local data partition
+    (x_train, y_train), (x_test, y_test) = load(args.num_clients)[args.partition]
+
+    # drop samples to form exact batches for dpsgd
+    # this is necessary since dpsgd is sensitive to uneven batches
+    # due to microbatching
+    if args.dpsgd and x_train.shape[0] % args.batch_size != 0:
+        drop_num = x_train.shape[0] % args.batch_size
+        x_train = x_train[:-drop_num]
+        y_train = y_train[:-drop_num]
+
+    # Start Flower client
+    client = MnistClient(x_train, y_train, x_test, y_test, args)
+    fl.client.start_numpy_client(server_address="127.0.0.1:8080", client=client)
+    if args.dpsgd:
+        print("Privacy Loss: ", PRIVACY_LOSS)
+
