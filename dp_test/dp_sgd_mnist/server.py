@@ -35,7 +35,7 @@ def main(args) -> None:
         evaluate_metrics_aggregation_fn=weighted_average,
     )
     fl.server.start_server(
-        server_address="0.0.0.0:8080",
+        server_address="192.168.0.10:8080",
         strategy=strategy,
         config=fl.server.ServerConfig(num_rounds=3),
     )
