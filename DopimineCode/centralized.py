@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 # Custom modules
 from MySqueezeNet import SqueezeNet
-import common
+import common as common
 
 # Defing Hyperparamaters
 EPOCHS = 70
@@ -29,11 +29,11 @@ BATCH_SIZE = 50
 SEED = 42
 IMAGE_SIZE = [265, 265]
 DATA_DIR = Path(os.path.join("Datasets", "aptos2019-blindness-detection", "train"))
-RESULTS_DIR = os.path.join("Results", "Centralized_Private_DR")
+RESULTS_DIR = os.path.join("Results", "Centralized_Vanilla")
 
 
 NOISE_MULTIPLIER = 0.3
-DIFFERENTIAL_PRIVACY = True
+DIFFERENTIAL_PRIVACY = False
 L2_NORM_CLIP = 2
 LEARNING_RATE = 0.02
 MICROBATCHES = 10
@@ -41,8 +41,7 @@ MICROBATCHES = 10
 tf.keras.utils.set_random_seed(42)  # sets seeds for base-python, numpy and tf
 tf.config.experimental.enable_op_determinism()  # ensures all opereations are deterministic, maybe not nessessary without GPU
 
-
-# TODO: what does this do
+# Compute the privacy budget expended.
 def compute_epsilon(epochs, num_data, batch_size):
     """Computes epsilon value for given hyperparameters."""
     steps = epochs * math.ceil(num_data / batch_size)
@@ -62,7 +61,6 @@ def compute_epsilon(epochs, num_data, batch_size):
 
     accountant.compose(event)
 
-    # TODO: find paramater for delta
     return accountant.get_epsilon(target_delta=1e-4)
 
 
