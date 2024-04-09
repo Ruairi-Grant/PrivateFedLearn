@@ -1,4 +1,5 @@
-'''Module to define the FlowerServer class and the main function to start the server'''
+"""Module to define the FlowerServer class and the main function to start the server"""
+
 # General Utility imports
 import os
 import argparse
@@ -25,7 +26,7 @@ parser = argparse.ArgumentParser(description="Flower Embedded devices")
 parser.add_argument(
     "--server_address",
     type=str,
-    default="0.0.0.0:8080",
+    default="192.168.68.64:8080",
     help="gRPC server address (deafault '0.0.0.0:8080')",
 )
 parser.add_argument(
@@ -73,7 +74,7 @@ LOCAL_BATCH = 50
 IMAGE_SIZE = [265, 265]
 
 DATA_DIR = Path("Datasets\\aptos2019-blindness-detection\\train")
-RESULTS_DIR = Path("Results\\FedLearn_DR_no_privacy")
+RESULTS_DIR = Path("Results\\FedLearn_DR_privacy")
 VAL_DF_DIR = Path("Datasets\\aptos2019-blindness-detection\\split_val.csv")
 
 
@@ -170,7 +171,7 @@ def main():
 
     model = SqueezeNet(include_top=False, input_shape=(224, 224, 3))
     model.compile(
-        optimizer="adam",
+        optimizer=tf.keras.optimizers.SGD(learning_rate=0.002),
         loss=tf.keras.losses.SparseCategoricalCrossentropy(),
         metrics=["accuracy"],
     )

@@ -24,19 +24,22 @@ from MySqueezeNet import SqueezeNet
 import common
 
 # Defing Hyperparamaters
-EPOCHS = 100
+EPOCHS = 70
 BATCH_SIZE = 50
 SEED = 42
 IMAGE_SIZE = [265, 265]
-DATA_DIR = os.path.join("Datasets", "aptos2019-blindness-detection", "train")
-RESULTS_DIR = os.path.join("Results", "Centralized_DR")
+DATA_DIR = Path(os.path.join("Datasets", "aptos2019-blindness-detection", "train"))
+RESULTS_DIR = os.path.join("Results", "Centralized_Private_DR")
 
 
 NOISE_MULTIPLIER = 0.3
 DIFFERENTIAL_PRIVACY = True
-L2_NORM_CLIP = 1.5
+L2_NORM_CLIP = 2
 LEARNING_RATE = 0.02
 MICROBATCHES = 10
+
+tf.keras.utils.set_random_seed(42)  # sets seeds for base-python, numpy and tf
+tf.config.experimental.enable_op_determinism()  # ensures all opereations are deterministic, maybe not nessessary without GPU
 
 
 # TODO: what does this do
@@ -60,7 +63,7 @@ def compute_epsilon(epochs, num_data, batch_size):
     accountant.compose(event)
 
     # TODO: find paramater for delta
-    return accountant.get_epsilon(target_delta=1e-5)
+    return accountant.get_epsilon(target_delta=1e-4)
 
 
 # create train and test datasets
@@ -141,20 +144,18 @@ model.compile(
 model.summary()
 
 # simple early stopping
-early_stopping = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=20)
+# early_stopping = EarlyStopping(monitor="val_loss", mode="min", verbose=1, patience=20)
 
-checkpoint = ModelCheckpoint(
-    "best_model.h5", monitor="val_loss", mode="min", verbose=1, save_best_only=True
-)
+# checkpoint = ModelCheckpoint(
+#    "best_model.h5", monitor="val_loss", mode="min", verbose=1, save_best_only=True
+# )
 
 history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=EPOCHS,
-    callbacks=[early_stopping, checkpoint],
+    # callbacks=[early_stopping, checkpoint],
 )
-
-best_model = load_model("best_model.h5")
 
 acc = history.history["accuracy"]
 val_acc = history.history["val_accuracy"]
@@ -184,9 +185,14 @@ ax2.plot(epochs_range, val_loss, label="Validation Loss")
 ax2.legend(loc="lower right")
 fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
 
+# Load the best model
+#best_model = load_model(
+#    "best_model.h5"
+#)  # TODO: Error here saying unknown optimizer, see github issue https://github.com/keras-team/tf-keras/issues/297
+
 # Evaluate the model
-common.evaluate_model(best_model, train_ds, os.path.join(RESULTS_DIR, "Train"))
-common.evaluate_model(best_model, val_ds, os.path.join(RESULTS_DIR, "Validation"))
+common.evaluate_model(model, train_ds, os.path.join(RESULTS_DIR, "Train"))
+common.evaluate_model(model, val_ds, os.path.join(RESULTS_DIR, "Validation"))
 
 # TODO: make this accurate for my case
 # Compute the privacy budget expended.

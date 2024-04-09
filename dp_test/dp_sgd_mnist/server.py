@@ -12,6 +12,7 @@ import common
 # Make TensorFlow logs less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+
 # Define metric aggregation function
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     """This function averages teh `accuracy` metric sent by the clients in a `evaluate`
@@ -37,7 +38,7 @@ def main(args) -> None:
     fl.server.start_server(
         server_address="192.168.0.10:8080",
         strategy=strategy,
-        config=fl.server.ServerConfig(num_rounds=3),
+        config=fl.server.ServerConfig(num_rounds=10),
     )
 
 
