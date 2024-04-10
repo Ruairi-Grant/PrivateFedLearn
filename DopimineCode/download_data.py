@@ -6,6 +6,7 @@ import os
 import urllib.request
 import zipfile
 from pathlib import Path
+import shutil
 
 import pandas as pd
 import gdown
@@ -22,7 +23,7 @@ if not os.path.exists(DATA_DIR):
 
 # download ZIP, unzip it, delete zip file
 ZIP_DIR = DATA_DIR + "images.zip"
-#gdown.download(DATA_URL, ZIP_DIR, quiet=False)
+gdown.download(DATA_URL, ZIP_DIR, quiet=False)
 print("Extracting...!")
 
 with zipfile.ZipFile(ZIP_DIR, "r") as zip_ref:

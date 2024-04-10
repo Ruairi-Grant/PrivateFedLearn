@@ -2,7 +2,8 @@
 Enviroment is flowerEnv for experiement 1
 
 # Download the data
-ensure the data is in the correct format
+- Set the variable to name the directory where you want the data
+- run download_data.py in python
 
 # 1: Vanilla SGD
 Set the foldir in results dir to the desired name and create the foldir
