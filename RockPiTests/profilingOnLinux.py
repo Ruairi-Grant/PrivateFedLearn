@@ -64,7 +64,9 @@ def test_script(args):
     if args.test_script == "central":
         Central_mnist.main(args.dpsgd)
     elif args.test_script == "fl_client":
-        client.main(args.dpsgd, args.server_address, 0)  # partition is set to 0
+        client.main(
+            args.dpsgd, args.server_address, 0, args.num_clients
+        )  # partition is set to 0
     else:
         print("Invalid test script")
 
@@ -121,10 +123,15 @@ if __name__ == "__main__":
         help="Data Partion to train on. Must be less than number of clients",
     )
     parser.add_argument(
-        "--server_address",
+        "--server-address",
         type=str,
-        default="0.0.0.0:8080",
-        help="gRPC server address (default '0.0.0.0:8080')",
+        default="192.168.0.10:8080",
+        help="gRPC server address (default '192.168.0.10:8080')",
+    )
+    parser.add_argument(
+        "--num-clients",
+        type=int,
+        default=3,
     )
 
     args = parser.parse_args()
