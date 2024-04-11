@@ -199,7 +199,7 @@ class MnistClient(fl.client.NumPyClient):
         return loss, num_examples_test, {"accuracy": accuracy}
 
 
-def main(dpsgd: bool=False) -> None:
+def main(dpsgd: bool, server_address: str) -> None:
     
     num_clients = 2
     partition = 0
@@ -224,7 +224,7 @@ def main(dpsgd: bool=False) -> None:
 
     # Start Flower client
     client = MnistClient(x_train, y_train, x_test, y_test,batch_size=batch_size, local_epochs=local_epochs, dpsgd=dpsgd, l2_norm_clip=l2_norm_clip, noise_multiplier=noise_multiplier, microbatches=microbatches, learning_rate=learning_rate)
-    fl.client.start_numpy_client(server_address="192.168.0.10:8080", client=client)
+    fl.client.start_numpy_client(server_address=server_address, client=client)
     if dpsgd:
         print("Privacy Loss: ", PRIVACY_LOSS)
 

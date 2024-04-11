@@ -8,9 +8,10 @@ import socket
 import Central_mnist as Central_mnist
 import client as client
 
+
 def test_network_and_cpu(duration=60):
     # Define the target host and port for sending and receiving packets
-    target_host = '192.168.0.10'
+    target_host = "192.168.0.10"
     target_port = 12345
 
     # Create a UDP socket for sending and receiving packets
@@ -44,7 +45,7 @@ def test_network_and_cpu(duration=60):
         cpu_load = psutil.cpu_percent()
 
         # Print CPU load and packet statistics
-        print(f"Sent: {sent_packets} | Received: {received_packets}", end='\r')
+        print(f"Sent: {sent_packets} | Received: {received_packets}", end="\r")
 
     # Close the socket
     sock.close()
@@ -56,12 +57,16 @@ def test_network_and_cpu(duration=60):
 def sleep_test(duration=60):
     time.sleep(duration)
 
+
 def test_script(args):
 
-    if args.test_script == 'central':
+    if args.test_script == "central":
         Central_mnist.main(args.dpsgd)
-    elif args.test_script == 'fl_client':
-        client.main(args.dpsgd)
+    elif args.test_script == "fl_client":
+        client.main(args.dpsgd, args.server_address)
+    else:
+        print("Invalid test script")
+
 
 def monitor(target):
     worker_process = mp.Process(target=target)
@@ -79,7 +84,7 @@ def monitor(target):
 
 
 def main(args):
-    
+
     start_pkts_sent = psutil.net_io_counters().packets_sent
     start_pkts_recv = psutil.net_io_counters().packets_recv
     cpu_percents = monitor(target=test_script(args))
@@ -93,6 +98,7 @@ def main(args):
     print(f"Average CPU usage: {psutil.getloadavg()}")
     print(f"Total packets sent: {final_pkts_sent}")
     print(f"Total packets received: {final_pkts_recv}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Flower Client")
@@ -109,6 +115,12 @@ if __name__ == "__main__":
         default=False,
         required=False,
         help="Data Partion to train on. Must be less than number of clients",
+    )
+    parser.add_argument(
+        "--server_address",
+        type=str,
+        default="0.0.0.0:8080",
+        help="gRPC server address (default '0.0.0.0:8080')",
     )
 
     args = parser.parse_args()
