@@ -7,7 +7,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
 
-from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras_vectorized import VectorizedDPKerasSGDOptimizer
+from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras_vectorized import (
+    VectorizedDPKerasSGDOptimizer,
+)
 import dp_accounting
 
 
@@ -26,10 +28,10 @@ BATCH_SIZE = 32
 LOCAL_EPOCHS = 30
 LEARNING_RATE = 0.1
 
-DPSGD = True
 L2_NORM_CLIP = 1.0
 NOISE_MULTIPLIER = 1.1
 MICROBATCHES = 32
+
 
 def compute_epsilon(
     epochs: int, num_train_examples: int, batch_size: int, noise_multiplier: float
@@ -159,22 +161,20 @@ def evaluate_model(eval_model, dataset, dir_path):
         file.write(report)
 
 
-def main():
+def main(dpsgd: bool = False):
     # Load a subset of MNIST to simulate the local data partition
     (x_train, y_train), (x_test, y_test) = load(1)[0]
 
     model = create_cnn_model()
 
-    if DPSGD and x_train.shape[0] % BATCH_SIZE != 0:
+    if dpsgd and x_train.shape[0] % BATCH_SIZE != 0:
         drop_num = x_train.shape[0] % BATCH_SIZE
         x_train = x_train[:-drop_num]
         y_train = y_train[:-drop_num]
 
-    if DPSGD:
+    if dpsgd:
         if BATCH_SIZE % MICROBATCHES != 0:
-            raise ValueError(
-                "Number of microbatches should divide evenly batch_size"
-            )
+            raise ValueError("Number of microbatches should divide evenly batch_size")
         optimizer = VectorizedDPKerasSGDOptimizer(
             l2_norm_clip=L2_NORM_CLIP,
             noise_multiplier=NOISE_MULTIPLIER,
@@ -236,7 +236,7 @@ def main():
 
     # TODO: make this accurate for my case
     # Compute the privacy budget expended.
-    if DPSGD:
+    if dpsgd:
         # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
         eps = compute_epsilon(
             len(loss), tf.data.experimental.cardinality(train_ds).numpy(), BATCH_SIZE

@@ -199,14 +199,13 @@ class MnistClient(fl.client.NumPyClient):
         return loss, num_examples_test, {"accuracy": accuracy}
 
 
-def main() -> None:
+def main(dpsgd: bool=False) -> None:
     
     num_clients = 2
     partition = 0
     local_epochs = 3
     batch_size = 32
     learning_rate = 0.15
-    dpsgd = True
     l2_norm_clip = 1.0
     noise_multiplier = 1.1
     microbatches = 32

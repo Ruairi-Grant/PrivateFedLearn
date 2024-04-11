@@ -61,7 +61,7 @@ def test_script(args):
     if args.test_script == 'central':
         Central_mnist.main()
     elif args.test_script == 'fl_client':
-        client.main()
+        client
 
 def monitor(target):
     worker_process = mp.Process(target=target)
