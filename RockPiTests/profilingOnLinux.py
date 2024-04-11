@@ -4,7 +4,7 @@ import psutil
 import numpy as np
 import socket
 
-import dp_test.dp_sgd_mnist.Central_mnist as Central_mnist
+import Central_mnist as Central_mnist
 
 def test_network_and_cpu(duration=60):
     # Define the target host and port for sending and receiving packets
@@ -76,7 +76,7 @@ def monitor(target):
 if __name__ == "__main__":
     start_pkts_sent = psutil.net_io_counters().packets_sent
     start_pkts_recv = psutil.net_io_counters().packets_recv
-    cpu_percents = monitor(target=test_network_and_cpu)
+    cpu_percents = monitor(target=test_script)
     end_pkts_sent = psutil.net_io_counters().packets_sent
     end_pkts_recv = psutil.net_io_counters().packets_recv
 

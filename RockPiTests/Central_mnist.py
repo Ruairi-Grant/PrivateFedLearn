@@ -14,11 +14,9 @@ import dp_accounting
 from typing import List, Tuple
 
 import numpy as np
-import tensorflow as tf
 
 #from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
 #from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
-import dp_accounting
 
 XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
@@ -187,87 +185,88 @@ def compute_epsilon(epochs, num_data, batch_size):
     # TODO: find paramater for delta
     return accountant.get_epsilon(target_delta=1e-4)
 
-# Load a subset of MNIST to simulate the local data partition
-(x_train, y_train), (x_test, y_test) = common.load(1)[0]
+def main():
+    # Load a subset of MNIST to simulate the local data partition
+    (x_train, y_train), (x_test, y_test) = load(1)[0]
 
-model = common.create_cnn_model()
+    model = create_cnn_model()
 
-if DPSGD and x_train.shape[0] % BATCH_SIZE != 0:
-    drop_num = x_train.shape[0] % BATCH_SIZE
-    x_train = x_train[:-drop_num]
-    y_train = y_train[:-drop_num]
+    if DPSGD and x_train.shape[0] % BATCH_SIZE != 0:
+        drop_num = x_train.shape[0] % BATCH_SIZE
+        x_train = x_train[:-drop_num]
+        y_train = y_train[:-drop_num]
 
-if DPSGD:
-    if BATCH_SIZE % MICROBATCHES != 0:
-        raise ValueError(
-            "Number of microbatches should divide evenly batch_size"
+    if DPSGD:
+        if BATCH_SIZE % MICROBATCHES != 0:
+            raise ValueError(
+                "Number of microbatches should divide evenly batch_size"
+            )
+        optimizer = VectorizedDPKerasSGDOptimizer(
+            l2_norm_clip=L2_NORM_CLIP,
+            noise_multiplier=NOISE_MULTIPLIER,
+            num_microbatches=MICROBATCHES,
+            learning_rate=LEARNING_RATE,
         )
-    optimizer = VectorizedDPKerasSGDOptimizer(
-        l2_norm_clip=L2_NORM_CLIP,
-        noise_multiplier=NOISE_MULTIPLIER,
-        num_microbatches=MICROBATCHES,
-        learning_rate=LEARNING_RATE,
+        # Compute vector of per-example loss rather than its mean over a minibatch.
+        loss = tf.keras.losses.CategoricalCrossentropy(
+            from_logits=True, reduction=tf.losses.Reduction.NONE
+        )
+    else:
+        optimizer = tf.keras.optimizers.SGD(learning_rate=LEARNING_RATE)
+        loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+
+    # Compile model with Keras
+    model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
+
+    model.summary()
+
+    history = model.fit(
+        x_train,
+        y_train,
+        epochs=LOCAL_EPOCHS,
+        batch_size=BATCH_SIZE,
+        validation_data=(x_train, y_train),
     )
-    # Compute vector of per-example loss rather than its mean over a minibatch.
-    loss = tf.keras.losses.CategoricalCrossentropy(
-        from_logits=True, reduction=tf.losses.Reduction.NONE
-    )
-else:
-    optimizer = tf.keras.optimizers.SGD(learning_rate=LEARNING_RATE)
-    loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
 
-# Compile model with Keras
-model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
+    acc = history.history["accuracy"]
+    val_acc = history.history["val_accuracy"]
 
-model.summary()
+    loss = history.history["loss"]
+    val_loss = history.history["val_loss"]
 
-history = model.fit(
-    x_train,
-    y_train,
-    epochs=LOCAL_EPOCHS,
-    batch_size=BATCH_SIZE,
-    validation_data=(x_train, y_train),
-)
+    epochs_range = range(len(loss))
 
-acc = history.history["accuracy"]
-val_acc = history.history["val_accuracy"]
+    # check if the results directory exists
+    if not os.path.exists(RESULTS_DIR):
+        os.makedirs(RESULTS_DIR)
 
-loss = history.history["loss"]
-val_loss = history.history["val_loss"]
+    # PLot the dataset and save it
+    fig1, ax1 = plt.subplots(figsize=(7, 5))
+    ax1.plot(epochs_range, acc, label="Training Accuracy")
+    ax1.plot(epochs_range, val_acc, label="Validation Accuracy")
+    ax1.legend(loc="lower right")
 
-epochs_range = range(len(loss))
+    fig1.savefig(os.path.join(RESULTS_DIR, "TrainingValidationAccuracy"))
 
-# check if the results directory exists
-if not os.path.exists(RESULTS_DIR):
-    os.makedirs(RESULTS_DIR)
+    # PLot the dataset and save it
+    fig2, ax2 = plt.subplots(figsize=(7, 5))
 
-# PLot the dataset and save it
-fig1, ax1 = plt.subplots(figsize=(7, 5))
-ax1.plot(epochs_range, acc, label="Training Accuracy")
-ax1.plot(epochs_range, val_acc, label="Validation Accuracy")
-ax1.legend(loc="lower right")
+    ax2.plot(epochs_range, loss, label="Training Loss")
+    ax2.plot(epochs_range, val_loss, label="Validation Loss")
+    ax2.legend(loc="lower right")
+    fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
 
-fig1.savefig(os.path.join(RESULTS_DIR, "TrainingValidationAccuracy"))
+    # Evaluate the model
+    evaluate_model(model, (x_train, y_train), os.path.join(RESULTS_DIR, "Train"))
+    evaluate_model(model, (x_test, y_test), os.path.join(RESULTS_DIR, "Validation"))
 
-# PLot the dataset and save it
-fig2, ax2 = plt.subplots(figsize=(7, 5))
-
-ax2.plot(epochs_range, loss, label="Training Loss")
-ax2.plot(epochs_range, val_loss, label="Validation Loss")
-ax2.legend(loc="lower right")
-fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
-
-# Evaluate the model
-evaluate_model(model, (x_train, y_train), os.path.join(RESULTS_DIR, "Train"))
-evaluate_model(model, (x_test, y_test), os.path.join(RESULTS_DIR, "Validation"))
-
-# TODO: make this accurate for my case
-# Compute the privacy budget expended.
-if DPSGD:
-    # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
-    eps = compute_epsilon(
-        len(loss), tf.data.experimental.cardinality(train_ds).numpy(), BATCH_SIZE
-    )
-    print(f"For delta=1e-5, the current epsilon is: {eps}")
-else:
-    print("Trained with vanilla non-private SGD optimizer")
+    # TODO: make this accurate for my case
+    # Compute the privacy budget expended.
+    if DPSGD:
+        # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
+        eps = compute_epsilon(
+            len(loss), tf.data.experimental.cardinality(train_ds).numpy(), BATCH_SIZE
+        )
+        print(f"For delta=1e-5, the current epsilon is: {eps}")
+    else:
+        print("Trained with vanilla non-private SGD optimizer")
