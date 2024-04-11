@@ -240,7 +240,7 @@ def main(dpsgd: bool = False):
     if dpsgd:
         # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
         eps = compute_epsilon(
-            len(loss), len(x_train).numpy(), BATCH_SIZE, NOISE_MULTIPLIER
+            len(loss), len(x_train), BATCH_SIZE, NOISE_MULTIPLIER
         )
         print(f"For delta=1e-5, the current epsilon is: {eps}")
     else:
