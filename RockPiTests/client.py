@@ -1,5 +1,5 @@
 import os
-
+import argparse
 import tensorflow as tf
 from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras_vectorized import (
     VectorizedDPKerasSGDOptimizer,
@@ -199,10 +199,9 @@ class MnistClient(fl.client.NumPyClient):
         return loss, num_examples_test, {"accuracy": accuracy}
 
 
-def main(dpsgd: bool, server_address: str) -> None:
+def main(dpsgd: bool, server_address: str, partition: int) -> None:
     
     num_clients = 2
-    partition = 0
     local_epochs = 3
     batch_size = 32
     learning_rate = 0.15
@@ -228,3 +227,30 @@ def main(dpsgd: bool, server_address: str) -> None:
     if dpsgd:
         print("Privacy Loss: ", PRIVACY_LOSS)
 
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Flower Client")
+    parser.add_argument(
+        "--dpsgd",
+        type=bool,
+        default=False,
+        required=False,
+        help="Data Partion to train on. Must be less than number of clients",
+    )
+    parser.add_argument(
+        "--server-address",
+        type=str,
+        default="0.0.0.0:8080",
+        help="gRPC server address (default '0.0.0.0:8080')",
+    )
+    parser.add_argument(
+        "--partition",
+        type=int,
+        default="0",
+        help="gRPC server address (default '0.0.0.0:8080')",
+    )
+
+
+    args = parser.parse_args()
+
+    main(args.dpsgd, args.server_address, args.partition)
