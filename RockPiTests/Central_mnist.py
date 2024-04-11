@@ -138,17 +138,19 @@ def evaluate_model(eval_model, X, y, dir_path):
     true_labels = []
     predicted_labels = []
 
-    for images, labels in (X, y):
-        predictions = eval_model.predict(images)
-        predicted_labels.extend(np.argmax(predictions, axis=1))
-        true_labels.extend(labels.numpy())
+    predictions = eval_model.predict(X)
+    predicted_labels.extend(np.argmax(predictions, axis=1))
+    true_labels = np.argmax(y, axis=1)
+
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
 
     # Create the confusion matrix
     cm = confusion_matrix(true_labels, predicted_labels)
 
     # Print the confusion matrix using seaborn
     sns.heatmap(cm, annot=True, fmt="d")
-    plt.savefig(dir_path + "/confusion_matrix.png")
+    plt.savefig(os.path.join(dir_path, "confusion_matrix.png"))
 
     # Create the classification report
     report = classification_report(true_labels, predicted_labels)
@@ -157,7 +159,7 @@ def evaluate_model(eval_model, X, y, dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-    with open(dir_path + "/classification_report.txt", "w") as file:
+    with open(os.path.join(dir_path, "classification_report"), "w") as file:
         file.write(report)
 
 
@@ -234,12 +236,11 @@ def main(dpsgd: bool = False):
     evaluate_model(model, x_train, y_train, os.path.join(RESULTS_DIR, "Train"))
     evaluate_model(model, x_test, y_test, os.path.join(RESULTS_DIR, "Validation"))
 
-    # TODO: make this accurate for my case
     # Compute the privacy budget expended.
     if dpsgd:
         # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
         eps = compute_epsilon(
-            len(loss), tf.data.experimental.cardinality(x_train).numpy(), BATCH_SIZE, NOISE_MULTIPLIER
+            len(loss), len(x_train).numpy(), BATCH_SIZE, NOISE_MULTIPLIER
         )
         print(f"For delta=1e-5, the current epsilon is: {eps}")
     else:
