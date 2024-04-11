@@ -128,9 +128,9 @@ def load(
     return list(zip(xy_train_partitions, xy_test_partitions))
 
 
-def evaluate_model(eval_model, dataset, dir_path):
+def evaluate_model(eval_model, X, y, dir_path):
     """Function to evaluate the model and save the confusion matrix and classification report"""
-    _, eval_acc = eval_model.evaluate(dataset, verbose=1)
+    _, eval_acc = eval_model.evaluate(X , y, verbose=1)
     print("\nTrain accuracy:", eval_acc)
     # Clear the current matplotlib figure
     plt.clf()
@@ -138,7 +138,7 @@ def evaluate_model(eval_model, dataset, dir_path):
     true_labels = []
     predicted_labels = []
 
-    for images, labels in dataset:
+    for images, labels in (X, y):
         predictions = eval_model.predict(images)
         predicted_labels.extend(np.argmax(predictions, axis=1))
         true_labels.extend(labels.numpy())
@@ -231,8 +231,8 @@ def main(dpsgd: bool = False):
     fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
 
     # Evaluate the model
-    evaluate_model(model, (x_train, y_train), os.path.join(RESULTS_DIR, "Train"))
-    evaluate_model(model, (x_test, y_test), os.path.join(RESULTS_DIR, "Validation"))
+    evaluate_model(model, x_train, y_train, os.path.join(RESULTS_DIR, "Train"))
+    evaluate_model(model, x_test, y_test, os.path.join(RESULTS_DIR, "Validation"))
 
     # TODO: make this accurate for my case
     # Compute the privacy budget expended.
