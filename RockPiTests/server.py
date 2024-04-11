@@ -36,7 +36,7 @@ def main(args) -> None:
         evaluate_metrics_aggregation_fn=weighted_average,
     )
     fl.server.start_server(
-        server_address="192.168.0.10:8080",
+        server_address=args.server_address,
         strategy=strategy,
         config=fl.server.ServerConfig(num_rounds=10),
     )
@@ -47,5 +47,6 @@ if __name__ == "__main__":
     parser.add_argument("--num-clients", default=2, type=int)
     parser.add_argument("--num-rounds", default=1, type=int)
     parser.add_argument("--fraction-fit", default=1.0, type=float)
+    parser.add_argument("--server-address", type=str, default="0.0.0.0:8080")
     args = parser.parse_args()
     main(args)

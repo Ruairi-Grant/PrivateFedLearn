@@ -64,7 +64,7 @@ def test_script(args):
     if args.test_script == "central":
         Central_mnist.main(args.dpsgd)
     elif args.test_script == "fl_client":
-        client.main(args.dpsgd, args.server_address)
+        client.main(args.dpsgd, args.server_address, 0)  # partition is set to 0
     else:
         print("Invalid test script")
 
