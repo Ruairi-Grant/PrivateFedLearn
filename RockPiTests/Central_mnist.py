@@ -15,14 +15,21 @@ from typing import List, Tuple
 
 import numpy as np
 
-#from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
-#from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
 
 XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
 PartitionedDataset = List[Tuple[XY, XY]]
 
+RESULTS_DIR = os.path.join("Results", "Centralized_Private_DR")
 
+BATCH_SIZE = 32
+LOCAL_EPOCHS = 30
+LEARNING_RATE = 0.1
+
+DPSGD = True
+L2_NORM_CLIP = 1.0
+NOISE_MULTIPLIER = 1.1
+MICROBATCHES = 32
 
 def compute_epsilon(
     epochs: int, num_train_examples: int, batch_size: int, noise_multiplier: float
@@ -119,17 +126,6 @@ def load(
     return list(zip(xy_train_partitions, xy_test_partitions))
 
 
-RESULTS_DIR = os.path.join("Results", "Centralized_Private_DR")
-
-BATCH_SIZE = 32
-LOCAL_EPOCHS = 30
-LEARNING_RATE = 0.1
-
-DPSGD = True
-L2_NORM_CLIP = 1.0
-NOISE_MULTIPLIER = 1.1
-MICROBATCHES = 32
-
 def evaluate_model(eval_model, dataset, dir_path):
     """Function to evaluate the model and save the confusion matrix and classification report"""
     _, eval_acc = eval_model.evaluate(dataset, verbose=1)
@@ -162,28 +158,6 @@ def evaluate_model(eval_model, dataset, dir_path):
     with open(dir_path + "/classification_report.txt", "w") as file:
         file.write(report)
 
-
-def compute_epsilon(epochs, num_data, batch_size):
-    """Computes epsilon value for given hyperparameters."""
-    steps = epochs * math.ceil(num_data / batch_size)
-    if NOISE_MULTIPLIER == 0.0:
-        return float("inf")
-    orders = [1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64))
-    # TODO:does this assume that i used SGD
-    accountant = dp_accounting.rdp.RdpAccountant(orders)
-
-    sampling_probability = batch_size / num_data
-    event = dp_accounting.SelfComposedDpEvent(
-        dp_accounting.PoissonSampledDpEvent(
-            sampling_probability, dp_accounting.GaussianDpEvent(NOISE_MULTIPLIER)
-        ),
-        steps,
-    )
-
-    accountant.compose(event)
-
-    # TODO: find paramater for delta
-    return accountant.get_epsilon(target_delta=1e-4)
 
 def main():
     # Load a subset of MNIST to simulate the local data partition

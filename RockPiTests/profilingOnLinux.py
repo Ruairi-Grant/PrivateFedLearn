@@ -1,3 +1,4 @@
+import argparse
 import time
 import multiprocessing as mp
 import psutil
@@ -5,6 +6,7 @@ import numpy as np
 import socket
 
 import Central_mnist as Central_mnist
+import client as client
 
 def test_network_and_cpu(duration=60):
     # Define the target host and port for sending and receiving packets
@@ -54,9 +56,12 @@ def test_network_and_cpu(duration=60):
 def sleep_test(duration=60):
     time.sleep(duration)
 
-def test_script():
+def test_script(args):
 
-    Central_mnist.main()
+    if args.test_script == 'central':
+        Central_mnist.main()
+    elif args.test_script == 'fl_client':
+        client.main()
 
 def monitor(target):
     worker_process = mp.Process(target=target)
@@ -73,10 +78,11 @@ def monitor(target):
     return cpu_percents
 
 
-if __name__ == "__main__":
+def main(args):
+    
     start_pkts_sent = psutil.net_io_counters().packets_sent
     start_pkts_recv = psutil.net_io_counters().packets_recv
-    cpu_percents = monitor(target=test_script)
+    cpu_percents = monitor(target=test_script(args))
     end_pkts_sent = psutil.net_io_counters().packets_sent
     end_pkts_recv = psutil.net_io_counters().packets_recv
 
@@ -87,3 +93,24 @@ if __name__ == "__main__":
     print(f"Average CPU usage: {psutil.getloadavg()}")
     print(f"Total packets sent: {final_pkts_sent}")
     print(f"Total packets received: {final_pkts_recv}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Flower Client")
+    parser.add_argument(
+        "--test-script",
+        default=2,
+        type=str,
+        required=True,
+        help="Test script to run",
+    )
+    parser.add_argument(
+        "--dpsgd",
+        type=bool,
+        default=False,
+        required=False,
+        help="Data Partion to train on. Must be less than number of clients",
+    )
+
+    args = parser.parse_args()
+
+    main(args)
