@@ -239,7 +239,7 @@ def main(dpsgd: bool = False):
     if dpsgd:
         # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
         eps = compute_epsilon(
-            len(loss), tf.data.experimental.cardinality(train_ds).numpy(), BATCH_SIZE, NOISE_MULTIPLIER
+            len(loss), tf.data.experimental.cardinality(x_train).numpy(), BATCH_SIZE, NOISE_MULTIPLIER
         )
         print(f"For delta=1e-5, the current epsilon is: {eps}")
     else:

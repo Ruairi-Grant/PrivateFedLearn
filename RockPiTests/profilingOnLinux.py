@@ -4,6 +4,7 @@ import multiprocessing as mp
 import psutil
 import numpy as np
 import socket
+from datetime import datetime
 
 import Central_mnist as Central_mnist
 import client as client
@@ -87,7 +88,9 @@ def main(args):
 
     start_pkts_sent = psutil.net_io_counters().packets_sent
     start_pkts_recv = psutil.net_io_counters().packets_recv
+    start_time = datetime.now()
     cpu_percents = monitor(target=test_script(args))
+    end_time = datetime.now()
     end_pkts_sent = psutil.net_io_counters().packets_sent
     end_pkts_recv = psutil.net_io_counters().packets_recv
 
@@ -98,6 +101,7 @@ def main(args):
     print(f"Average CPU usage: {psutil.getloadavg()}")
     print(f"Total packets sent: {final_pkts_sent}")
     print(f"Total packets received: {final_pkts_recv}")
+    print(f"Total time: {end_time - start_time}")
 
 
 if __name__ == "__main__":
