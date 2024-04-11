@@ -59,9 +59,9 @@ def sleep_test(duration=60):
 def test_script(args):
 
     if args.test_script == 'central':
-        Central_mnist.main()
+        Central_mnist.main(args.dpsgd)
     elif args.test_script == 'fl_client':
-        client
+        client.main(args.dpsgd)
 
 def monitor(target):
     worker_process = mp.Process(target=target)
