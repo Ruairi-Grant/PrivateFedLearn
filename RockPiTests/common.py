@@ -104,5 +104,5 @@ def load(
     """Create partitioned version of MNIST."""
     xy_train, xy_test = tf.keras.datasets.mnist.load_data()
     xy_train_partitions = create_partitions(xy_train, num_partitions)
-    xy_test_partitions = create_partitions(xy_test, num_partitions)
+    xy_test_partitions = create_partitions(xy_test, num_partitions+1)
     return list(zip(xy_train_partitions, xy_test_partitions))

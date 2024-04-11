@@ -105,7 +105,7 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Flower Client")
+    parser = argparse.ArgumentParser(description="Linux Profiler")
     parser.add_argument(
         "--test-script",
         default=2,
