@@ -1,6 +1,7 @@
 """Train a CNN model on MNIST using Keras and TensorFlow Privacy."""
 
 import os
+import time
 from typing import List, Tuple
 
 # SKlearn model evaluation
@@ -28,6 +29,22 @@ LEARNING_RATE = 0.1
 L2_NORM_CLIP = 1.0
 NOISE_MULTIPLIER = 1.1
 MICROBATCHES = 32
+
+
+class TimeHistory(tf.keras.callbacks.Callback):
+    """This class is used to measure the time taken for each epoch"""
+
+    def on_train_begin(self, logs=None):
+        """Initialize the times list"""
+        self.times = []
+
+    def on_epoch_begin(self, epoch, logs=None):
+        """Return the start time of each epoch"""
+        self.epoch_time_start = time.time()
+
+    def on_epoch_end(self, epoch, logs=None):
+        """return the time taken for each epoch"""
+        self.times.append(time.time() - self.epoch_time_start)
 
 
 def compute_epsilon(
@@ -146,7 +163,9 @@ def evaluate_model(eval_model, X, y, dir_path):
     cm = confusion_matrix(true_labels, predicted_labels)
 
     # Print the confusion matrix using seaborn
-    sns.heatmap(cm, annot=True, fmt="d")
+    sns.heatmap(cm, annot=True, fmt="d").set(
+        xlabel="Predicted Class", ylabel="True Class"
+    )
     plt.savefig(os.path.join(dir_path, "confusion_matrix.png"))
 
     # Create the classification report
@@ -197,18 +216,33 @@ def main(results_dir_name: str, dpsgd: bool = False):
     # Compile model with Keras
     model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
+    # Save the model summary
     with open(
-        os.path.join(results_dir, "model_summary.txt"), "w", encoding="utf-8"
+        os.path.join(results_dir, "training_data.txt"), "w", encoding="utf-8"
     ) as f:
+
         model.summary(print_fn=lambda x: f.write(x + "\n"))
 
+    # define the time callback
+    time_callback = TimeHistory()
+
+    # Train the model
     history = model.fit(
         x_train,
         y_train,
         epochs=LOCAL_EPOCHS,
         batch_size=BATCH_SIZE,
         validation_data=(x_train, y_train),
+        callbacks=[time_callback],
     )
+
+    times = time_callback.times
+
+    # save the averate training time
+    with open(
+        os.path.join(results_dir, "training_data.txt"), "w", encoding="utf-8"
+    ) as f:
+        f.write(f"Average time per epoch: {np.mean(times)}\n")
 
     acc = history.history["accuracy"]
     val_acc = history.history["val_accuracy"]
@@ -224,9 +258,9 @@ def main(results_dir_name: str, dpsgd: bool = False):
 
     # PLot the accuracy and save it
     fig1, ax1 = plt.subplots(figsize=(7, 5))
-    ax1.title("Training and Validation Accuracy")
-    ax1.xlabel("Epochs")
-    ax1.ylabel("Accuracy")
+    plt.title("Training and Validation Accuracy")
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy")
     ax1.plot(epochs_range, acc, label="Training Accuracy")
     ax1.plot(epochs_range, val_acc, label="Validation Accuracy")
     ax1.legend(loc="lower right")
@@ -235,9 +269,9 @@ def main(results_dir_name: str, dpsgd: bool = False):
 
     # PLot the dataset and save it
     fig2, ax2 = plt.subplots(figsize=(7, 5))
-    ax2.title("Training and Validation Loss")
-    ax2.xlabel("Epochs")
-    ax2.ylabel("Loss")
+    plt.title("Training and Validation Loss")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
     ax2.plot(epochs_range, loss, label="Training Loss")
     ax2.plot(epochs_range, val_loss, label="Validation Loss")
     ax2.legend(loc="lower right")
@@ -251,6 +285,12 @@ def main(results_dir_name: str, dpsgd: bool = False):
     if dpsgd:
         # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
         eps = compute_epsilon(len(loss), len(x_train), BATCH_SIZE, NOISE_MULTIPLIER)
-        print(f"For delta=1e-5, the current epsilon is: {eps}")
+
+        # save the averate training time
+        with open(
+            os.path.join(results_dir, "training_data.txt"), "w", encoding="utf-8"
+        ) as f:
+            f.write(f"For delta=1e-5, the current epsilon is: {eps}\n")
+
     else:
         print("Trained with vanilla non-private SGD optimizer")
