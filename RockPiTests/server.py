@@ -19,6 +19,8 @@ import common
 
 RESULTS_DIR = os.path.join("Results", "Federated_mnist")
 num_rounds = 1 # global that will be updated in main, this is probably bad practice
+loss_history = []
+accuracy_history = []
 
 # Make TensorFlow logs less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -76,11 +78,16 @@ def get_evaluate_fn(model, num_clients):
         
         model.set_weights(parameters)  # Update model with the latest parameters
 
-        if server_round == num_rounds - 1:
+        if server_round == num_rounds:
              evaluate_model(model, x_test, y_test, os.path.join(RESULTS_DIR, "Train"))
         
         # inneficeint to calculate this twice but not a big deal
         loss, accuracy = model.evaluate(x_test, y_test)
+
+        global loss_history, accuracy_history 
+        loss_history.append(loss)
+        accuracy_history.append(accuracy)
+
         return loss, {"accuracy": accuracy}
 
     return evaluate
@@ -91,7 +98,8 @@ def main(args) -> None:
     loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True) # Loss doesnt matter heve because its only for inference
     model.compile("sgd", loss=loss, metrics=["accuracy"])
 
-    global num_rounds 
+    global num_rounds
+    
     num_rounds = args.num_rounds
     strategy = fl.server.strategy.FedAvg(
         fraction_fit=args.fraction_fit,
@@ -103,6 +111,31 @@ def main(args) -> None:
         strategy=strategy,
         config=fl.server.ServerConfig(num_rounds=args.num_rounds),
     )
+
+    global loss_history, accuracy_history
+    # Save the loss and accuracy history
+    print("Loss history: ", loss_history)
+    print("Accuracy history: ", accuracy_history)
+
+    epochs_range = range(len(loss_history))
+
+    # check if the results directory exists
+    if not os.path.exists(RESULTS_DIR):
+        os.makedirs(RESULTS_DIR)
+
+    # PLot the dataset and save it
+    fig1, ax1 = plt.subplots(figsize=(7, 5))
+    ax1.plot(epochs_range, accuracy_history, label="Validation Accuracy")
+    ax1.legend(loc="lower right")
+
+    fig1.savefig(os.path.join(RESULTS_DIR, "TrainingValidationAccuracy"))
+
+    # PLot the dataset and save it
+    fig2, ax2 = plt.subplots(figsize=(7, 5))
+
+    ax2.plot(epochs_range, loss_history, label="Validation Loss")
+    ax2.legend(loc="lower right")
+    fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
 
 
 if __name__ == "__main__":

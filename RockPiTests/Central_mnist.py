@@ -164,7 +164,7 @@ def evaluate_model(eval_model, X, y, dir_path):
 
 
 def main(dpsgd: bool = False):
-    # Load a subset of MNIST to simulate the local data partition
+    # Load all of mnist using the load function
     (x_train, y_train), (x_test, y_test) = load(1)[0]
 
     model = create_cnn_model()
