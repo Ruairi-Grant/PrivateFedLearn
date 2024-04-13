@@ -69,7 +69,7 @@ def test_script(args):
     """Run the specified training script."""
 
     if args.test_script == "central":
-        Central_mnist.main(args.results_dir, args.dpsgd)
+        central_mnist.main(args.results_dir, args.dpsgd)
     elif args.test_script == "fl_client":
         client.main(
             args.dpsgd, args.server_address, 0, args.num_clients
