@@ -1,5 +1,7 @@
 .vscode
 flowerEnv/
+flower_mnist_HE/
+flwr_fhe/
 __pycache__/
 data
 Datasets

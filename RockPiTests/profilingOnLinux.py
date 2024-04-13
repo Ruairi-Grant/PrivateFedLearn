@@ -10,7 +10,7 @@ import socket
 import psutil
 import numpy as np
 
-import Central_mnist
+import central_mnist
 import client
 
 
