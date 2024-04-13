@@ -1,4 +1,5 @@
 """Train a CNN model on MNIST using Keras and TensorFlow Privacy."""
+
 import os
 from typing import List, Tuple
 
@@ -14,8 +15,6 @@ from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras_vectorized import 
     VectorizedDPKerasSGDOptimizer,
 )
 import dp_accounting
-
-
 
 
 XY = Tuple[np.ndarray, np.ndarray]
@@ -128,7 +127,7 @@ def load(
 
 def evaluate_model(eval_model, X, y, dir_path):
     """Function to evaluate the model and save the confusion matrix and classification report"""
-    _, eval_acc = eval_model.evaluate(X , y, verbose=1)
+    _, eval_acc = eval_model.evaluate(X, y, verbose=1)
     print("\nTrain accuracy:", eval_acc)
     # Clear the current matplotlib figure
     plt.clf()
@@ -157,7 +156,9 @@ def evaluate_model(eval_model, X, y, dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-    with open(os.path.join(dir_path, "classification_report"), "w", encoding='utf-8') as file:
+    with open(
+        os.path.join(dir_path, "classification_report"), "w", encoding="utf-8"
+    ) as file:
         file.write(report)
 
 
@@ -241,9 +242,7 @@ def main(results_dir_name: str, dpsgd: bool = False):
     # Compute the privacy budget expended.
     if dpsgd:
         # eps = compute_epsilon(EPOCHS * 60000 // BATCH_SIZE)
-        eps = compute_epsilon(
-            len(loss), len(x_train), BATCH_SIZE, NOISE_MULTIPLIER
-        )
+        eps = compute_epsilon(len(loss), len(x_train), BATCH_SIZE, NOISE_MULTIPLIER)
         print(f"For delta=1e-5, the current epsilon is: {eps}")
     else:
         print("Trained with vanilla non-private SGD optimizer")

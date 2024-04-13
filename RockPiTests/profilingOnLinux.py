@@ -1,4 +1,5 @@
 """Script to profile CPU usage and network traffic on a Linux machine."""
+
 import os
 import argparse
 import time
@@ -119,13 +120,12 @@ def main(args):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    with open(os.path.join(results_dir, "profiling.txt"), "w", encoding='utf-8') as f:
+    with open(os.path.join(results_dir, "profiling.txt"), "w", encoding="utf-8") as f:
         f.write(f"CPU usage: {np.mean(cpu_percents)}%\n")
         f.write(f"Average CPU usage: {psutil.getloadavg()}\n")
         f.write(f"Total packets sent: {final_pkts_sent}\n")
         f.write(f"Total packets received: {final_pkts_recv}\n")
         f.write(f"Total time: {end_time - start_time}\n")
-
 
 
 if __name__ == "__main__":
