@@ -1,28 +1,26 @@
+"""Train a CNN model on MNIST using Keras and TensorFlow Privacy."""
 import os
-import math
+from typing import List, Tuple
 
 # SKlearn model evaluation
 from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 import tensorflow as tf
 
+# Privacy libs
 from tensorflow_privacy.privacy.optimizers.dp_optimizer_keras_vectorized import (
     VectorizedDPKerasSGDOptimizer,
 )
 import dp_accounting
 
 
-from typing import List, Tuple
-
-import numpy as np
 
 
 XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
 PartitionedDataset = List[Tuple[XY, XY]]
-
-RESULTS_DIR = os.path.join("Results", "Centralized_Private_DR")
 
 BATCH_SIZE = 32
 LOCAL_EPOCHS = 30
@@ -159,11 +157,15 @@ def evaluate_model(eval_model, X, y, dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
 
-    with open(os.path.join(dir_path, "classification_report"), "w") as file:
+    with open(os.path.join(dir_path, "classification_report"), "w", encoding='utf-8') as file:
         file.write(report)
 
 
-def main(dpsgd: bool = False):
+def main(results_dir_name: str, dpsgd: bool = False):
+    """Train a CNN model on MNIST using Keras and TensorFlow Privacy."""
+
+    results_dir = os.path.join("Results", results_dir_name)
+
     # Load all of mnist using the load function
     (x_train, y_train), (x_test, y_test) = load(1)[0]
 
@@ -213,8 +215,8 @@ def main(dpsgd: bool = False):
     epochs_range = range(len(loss))
 
     # check if the results directory exists
-    if not os.path.exists(RESULTS_DIR):
-        os.makedirs(RESULTS_DIR)
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
 
     # PLot the dataset and save it
     fig1, ax1 = plt.subplots(figsize=(7, 5))
@@ -222,7 +224,7 @@ def main(dpsgd: bool = False):
     ax1.plot(epochs_range, val_acc, label="Validation Accuracy")
     ax1.legend(loc="lower right")
 
-    fig1.savefig(os.path.join(RESULTS_DIR, "TrainingValidationAccuracy"))
+    fig1.savefig(os.path.join(results_dir, "TrainingValidationAccuracy"))
 
     # PLot the dataset and save it
     fig2, ax2 = plt.subplots(figsize=(7, 5))
@@ -230,11 +232,11 @@ def main(dpsgd: bool = False):
     ax2.plot(epochs_range, loss, label="Training Loss")
     ax2.plot(epochs_range, val_loss, label="Validation Loss")
     ax2.legend(loc="lower right")
-    fig2.savefig(os.path.join(RESULTS_DIR, "TrainingValidationLoss"))
+    fig2.savefig(os.path.join(results_dir, "TrainingValidationLoss"))
 
     # Evaluate the model
-    evaluate_model(model, x_train, y_train, os.path.join(RESULTS_DIR, "Train"))
-    evaluate_model(model, x_test, y_test, os.path.join(RESULTS_DIR, "Validation"))
+    evaluate_model(model, x_train, y_train, os.path.join(results_dir, "Train"))
+    evaluate_model(model, x_test, y_test, os.path.join(results_dir, "Validation"))
 
     # Compute the privacy budget expended.
     if dpsgd:

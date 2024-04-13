@@ -1,16 +1,20 @@
+"""Script to profile CPU usage and network traffic on a Linux machine."""
+import os
 import argparse
 import time
 import multiprocessing as mp
+from datetime import datetime
+import socket
+
 import psutil
 import numpy as np
-import socket
-from datetime import datetime
 
-import Central_mnist as Central_mnist
-import client as client
+import Central_mnist
+import client
 
 
 def test_network_and_cpu(duration=60):
+    """Test network and CPU load for a specified duration."""
     # Define the target host and port for sending and receiving packets
     target_host = "192.168.0.10"
     target_port = 12345
@@ -56,13 +60,15 @@ def test_network_and_cpu(duration=60):
 
 
 def sleep_test(duration=60):
+    """Test network and CPU load for a specified duration."""
     time.sleep(duration)
 
 
 def test_script(args):
+    """Run the specified training script."""
 
     if args.test_script == "central":
-        Central_mnist.main(args.dpsgd)
+        Central_mnist.main(args.results_dir, args.dpsgd)
     elif args.test_script == "fl_client":
         client.main(
             args.dpsgd, args.server_address, 0, args.num_clients
@@ -72,6 +78,8 @@ def test_script(args):
 
 
 def monitor(target):
+    """Monitor the CPU usage of a target function."""
+
     worker_process = mp.Process(target=target)
     worker_process.start()
     p = psutil.Process(worker_process.pid)
@@ -87,6 +95,9 @@ def monitor(target):
 
 
 def main(args):
+    """Run the specified training script and monitor CPU usage."""
+
+    results_dir = os.path.join("Results", args.results_dir)
 
     start_pkts_sent = psutil.net_io_counters().packets_sent
     start_pkts_recv = psutil.net_io_counters().packets_recv
@@ -105,6 +116,17 @@ def main(args):
     print(f"Total packets received: {final_pkts_recv}")
     print(f"Total time: {end_time - start_time}")
 
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
+    with open(os.path.join(results_dir, "profiling.txt"), "w", encoding='utf-8') as f:
+        f.write(f"CPU usage: {np.mean(cpu_percents)}%\n")
+        f.write(f"Average CPU usage: {psutil.getloadavg()}\n")
+        f.write(f"Total packets sent: {final_pkts_sent}\n")
+        f.write(f"Total packets received: {final_pkts_recv}\n")
+        f.write(f"Total time: {end_time - start_time}\n")
+
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Linux Profiler")
@@ -114,6 +136,12 @@ if __name__ == "__main__":
         type=str,
         required=True,
         help="Test script to run",
+    )
+    parser.add_argument(
+        "--resuls-dir",
+        type=str,
+        required=True,
+        help="Directory to save the results",
     )
     parser.add_argument(
         "--dpsgd",
@@ -132,8 +160,9 @@ if __name__ == "__main__":
         "--num-clients",
         type=int,
         default=3,
+        help="Number of clients to create (default 3)",
     )
 
-    args = parser.parse_args()
+    input_args = parser.parse_args()
 
-    main(args)
+    main(input_args)
