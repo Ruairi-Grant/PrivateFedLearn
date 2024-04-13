@@ -186,6 +186,9 @@ def main(results_dir_name: str, dpsgd: bool = False):
 
     results_dir = os.path.join("Results", results_dir_name)
 
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
     # Load all of mnist using the load function
     (x_train, y_train), (x_test, y_test) = load(1)[0]
 
