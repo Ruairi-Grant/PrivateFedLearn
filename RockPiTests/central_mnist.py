@@ -197,7 +197,10 @@ def main(results_dir_name: str, dpsgd: bool = False):
     # Compile model with Keras
     model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
-    model.summary()
+    with open(
+        os.path.join(results_dir, "model_summary.txt"), "w", encoding="utf-8"
+    ) as f:
+        model.summary(print_fn=lambda x: f.write(x + "\n"))
 
     history = model.fit(
         x_train,
@@ -219,8 +222,11 @@ def main(results_dir_name: str, dpsgd: bool = False):
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
 
-    # PLot the dataset and save it
+    # PLot the accuracy and save it
     fig1, ax1 = plt.subplots(figsize=(7, 5))
+    ax1.title("Training and Validation Accuracy")
+    ax1.xlabel("Epochs")
+    ax1.ylabel("Accuracy")
     ax1.plot(epochs_range, acc, label="Training Accuracy")
     ax1.plot(epochs_range, val_acc, label="Validation Accuracy")
     ax1.legend(loc="lower right")
@@ -229,7 +235,9 @@ def main(results_dir_name: str, dpsgd: bool = False):
 
     # PLot the dataset and save it
     fig2, ax2 = plt.subplots(figsize=(7, 5))
-
+    ax2.title("Training and Validation Loss")
+    ax2.xlabel("Epochs")
+    ax2.ylabel("Loss")
     ax2.plot(epochs_range, loss, label="Training Loss")
     ax2.plot(epochs_range, val_loss, label="Validation Loss")
     ax2.legend(loc="lower right")

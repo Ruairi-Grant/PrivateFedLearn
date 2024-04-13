@@ -5,7 +5,7 @@ Enviroment is Dp_env
 connect both on the same local network and note the ip address of the server computer
 
 # 1: Vanilla SGD
-run python profilingOnLinux.py --test-script="central" --dpsgd=False
+run python profilingOnLinux.py --test-script="central" 
 
 # 2: Central DP
 run python profilingOnLinux.py --test-script="central" --dpsgd=True
@@ -23,4 +23,4 @@ set your ip address in the start_server.bat and client_setup.bat
 in client_setup set dpsgd to true
 run start_server.bat and start_client.bat
 on the rockpi 
-run python profilingOnLinux.py --test-script="fl_client" --dpsgd=True --server-address=<IP-ADDRESS> --num-clients=<NUM-CLIENTS>
+run python profilingOnLinux.py --test-script="fl_client" --dpsgd=True --server-address=<IP-ADDRESS> --num-clients=<NUM-CLIENTS>cd pytho

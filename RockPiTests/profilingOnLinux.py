@@ -138,7 +138,7 @@ if __name__ == "__main__":
         help="Test script to run",
     )
     parser.add_argument(
-        "--resuls-dir",
+        "--results-dir",
         type=str,
         required=True,
         help="Directory to save the results",
