@@ -137,7 +137,7 @@ def main(dpsgd: bool, server_address: str, partition: int, num_clients: int) -> 
     learning_rate = 0.25
     l2_norm_clip = 1.5
     noise_multiplier = 1.3
-    microbatches = 356
+    microbatches = 256
 
     # Load a subset of MNIST to simulate the local data partition
     (x_train, y_train), (x_test, y_test) = common.load(num_clients)[partition]
