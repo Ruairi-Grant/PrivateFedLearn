@@ -1,0 +1,1 @@
+For delta=1e-5, the current epsilon is: 0.8066637802671548

@@ -1,0 +1,5 @@
+CPU usage: 0.0%
+Average CPU usage: (1.947265625, 2.02294921875, 0.92236328125)
+Total packets sent: 2210
+Total packets received: 2132
+Total time: 0:03:49.157873

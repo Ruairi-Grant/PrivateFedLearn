@@ -22,13 +22,13 @@ XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
 PartitionedDataset = List[Tuple[XY, XY]]
 
-BATCH_SIZE = 32
-LOCAL_EPOCHS = 30
-LEARNING_RATE = 0.1
+BATCH_SIZE = 256
+LOCAL_EPOCHS = 15
+LEARNING_RATE = 0.25
 
-L2_NORM_CLIP = 1.0
-NOISE_MULTIPLIER = 1.1
-MICROBATCHES = 32
+L2_NORM_CLIP = 1.5
+NOISE_MULTIPLIER = 1.3
+MICROBATCHES = 256
 
 
 class TimeHistory(tf.keras.callbacks.Callback):
