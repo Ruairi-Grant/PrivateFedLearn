@@ -16,7 +16,7 @@ import common
 
 # from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
 # from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
-#import dp_accounting
+# import dp_accounting
 
 XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
@@ -112,7 +112,7 @@ class MnistClient(fl.client.NumPyClient):
             "accuracy": history.history["accuracy"][-1],
             "val_loss": history.history["val_loss"][-1],
             "val_accuracy": history.history["val_accuracy"][-1],
-            #"privacy_loss": PRIVACY_LOSS,
+            # "privacy_loss": PRIVACY_LOSS,
         }
 
         return self.model.get_weights(), len(self.x_train), results
@@ -133,11 +133,11 @@ class MnistClient(fl.client.NumPyClient):
 def main(dpsgd: bool, server_address: str, partition: int, num_clients: int) -> None:
 
     local_epochs = 3
-    batch_size = 32
-    learning_rate = 0.15
-    l2_norm_clip = 1.0
-    noise_multiplier = 1.1
-    microbatches = 32
+    batch_size = 256
+    learning_rate = 0.25
+    l2_norm_clip = 1.5
+    noise_multiplier = 1.3
+    microbatches = 356
 
     # Load a subset of MNIST to simulate the local data partition
     (x_train, y_train), (x_test, y_test) = common.load(num_clients)[partition]

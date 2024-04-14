@@ -23,7 +23,7 @@ from flwr.server.client_proxy import ClientProxy
 
 import common
 
-RESULTS_DIR = os.path.join("Results", "Federated_mnist")
+RESULTS_DIR = os.path.join("Results", "Federated_vanilla")
 num_rounds = 1  # global that will be updated in main, this is probably bad practice
 loss_history = []
 accuracy_history = []
