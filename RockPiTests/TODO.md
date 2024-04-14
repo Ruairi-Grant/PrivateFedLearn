@@ -1,5 +1,4 @@
-
-- output validation and accuracy plots
+send client privacy loss to the server
 
 
 # Notes on current hyper-paramaters

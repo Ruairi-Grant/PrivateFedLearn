@@ -16,7 +16,7 @@ import common
 
 # from tensorflow_privacy.privacy.analysis.rdp_accountant import compute_rdp
 # from tensorflow_privacy.privacy.analysis.rdp_accountant import get_privacy_spent
-import dp_accounting
+#import dp_accounting
 
 XY = Tuple[np.ndarray, np.ndarray]
 XYList = List[XY]
@@ -32,7 +32,20 @@ PRIVACY_LOSS = 0
 
 # Define Flower client
 class MnistClient(fl.client.NumPyClient):
-    def __init__(self, x_train, y_train, x_test, y_test, batch_size, local_epochs, dpsgd, l2_norm_clip, noise_multiplier, microbatches, learning_rate):
+    def __init__(
+        self,
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        batch_size,
+        local_epochs,
+        dpsgd,
+        l2_norm_clip,
+        noise_multiplier,
+        microbatches,
+        learning_rate,
+    ):
         # small model for MNIST
         self.model = common.create_cnn_model()
         self.x_train, self.y_train = x_train, y_train
@@ -85,14 +98,24 @@ class MnistClient(fl.client.NumPyClient):
         print("Privacy Loss: ", PRIVACY_LOSS)
         self.model.set_weights(parameters)
         # Train the model
-        self.model.fit(
+        history = self.model.fit(
             self.x_train,
             self.y_train,
             epochs=self.local_epochs,
             batch_size=self.batch_size,
+            validation_data=(self.x_test, self.y_test),
         )
 
-        return self.model.get_weights(), len(self.x_train), {}
+        # Flower doesn't allow the elemetns of the dict to be anything but a scalar, so we can only return the last element of the history
+        results = {
+            "loss": history.history["loss"][-1],
+            "accuracy": history.history["accuracy"][-1],
+            "val_loss": history.history["val_loss"][-1],
+            "val_accuracy": history.history["val_accuracy"][-1],
+            #"privacy_loss": PRIVACY_LOSS,
+        }
+
+        return self.model.get_weights(), len(self.x_train), results
 
     def evaluate(self, parameters, config):
         """Evaluate parameters on the locally held test set."""
@@ -103,20 +126,19 @@ class MnistClient(fl.client.NumPyClient):
         # Evaluate global model parameters on the local test data and return results
         loss, accuracy = self.model.evaluate(self.x_test, self.y_test)
         num_examples_test = len(self.x_test)
+
         return loss, num_examples_test, {"accuracy": accuracy}
 
 
 def main(dpsgd: bool, server_address: str, partition: int, num_clients: int) -> None:
-    
-    
+
     local_epochs = 3
     batch_size = 32
     learning_rate = 0.15
     l2_norm_clip = 1.0
     noise_multiplier = 1.1
     microbatches = 32
-    
-    
+
     # Load a subset of MNIST to simulate the local data partition
     (x_train, y_train), (x_test, y_test) = common.load(num_clients)[partition]
 
@@ -129,7 +151,19 @@ def main(dpsgd: bool, server_address: str, partition: int, num_clients: int) -> 
         y_train = y_train[:-drop_num]
 
     # Start Flower client
-    client = MnistClient(x_train, y_train, x_test, y_test,batch_size=batch_size, local_epochs=local_epochs, dpsgd=dpsgd, l2_norm_clip=l2_norm_clip, noise_multiplier=noise_multiplier, microbatches=microbatches, learning_rate=learning_rate)
+    client = MnistClient(
+        x_train,
+        y_train,
+        x_test,
+        y_test,
+        batch_size=batch_size,
+        local_epochs=local_epochs,
+        dpsgd=dpsgd,
+        l2_norm_clip=l2_norm_clip,
+        noise_multiplier=noise_multiplier,
+        microbatches=microbatches,
+        learning_rate=learning_rate,
+    )
     fl.client.start_numpy_client(server_address=server_address, client=client)
     if dpsgd:
         print("Privacy Loss: ", PRIVACY_LOSS)
@@ -160,7 +194,6 @@ if __name__ == "__main__":
         type=int,
         default="3",
     )
-
 
     args = parser.parse_args()
 
