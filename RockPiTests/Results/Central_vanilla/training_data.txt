@@ -1,0 +1,1 @@
+Average time per epoch: 10.193233346939087
